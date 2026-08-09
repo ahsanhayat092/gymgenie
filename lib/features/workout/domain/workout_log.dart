@@ -56,11 +56,23 @@ class ExerciseLog {
     required this.exerciseId,
     required this.exerciseName,
     required this.sets,
+    this.durationMinutes,
+    this.distanceKm,
+    this.speedKmh,
+    this.inclinePct,
+    this.resistanceLevel,
+    this.caloriesBurned,
   });
 
   final String exerciseId;
   final String exerciseName;
   final List<SetLog> sets;
+  final double? durationMinutes;
+  final double? distanceKm;
+  final double? speedKmh;
+  final double? inclinePct;
+  final double? resistanceLevel;
+  final double? caloriesBurned;
 
   double get volume => sets
       .where((s) => s.completed)
@@ -74,6 +86,12 @@ class ExerciseLog {
       sets: rawSets
           .map((e) => SetLog.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
+      durationMinutes: (map['durationMinutes'] as num?)?.toDouble(),
+      distanceKm: (map['distanceKm'] as num?)?.toDouble(),
+      speedKmh: (map['speedKmh'] as num?)?.toDouble(),
+      inclinePct: (map['inclinePct'] as num?)?.toDouble(),
+      resistanceLevel: (map['resistanceLevel'] as num?)?.toDouble(),
+      caloriesBurned: (map['caloriesBurned'] as num?)?.toDouble(),
     );
   }
 
@@ -82,6 +100,12 @@ class ExerciseLog {
       'exerciseId': exerciseId,
       'exerciseName': exerciseName,
       'sets': sets.map((s) => s.toMap()).toList(),
+      if (durationMinutes != null) 'durationMinutes': durationMinutes,
+      if (distanceKm != null) 'distanceKm': distanceKm,
+      if (speedKmh != null) 'speedKmh': speedKmh,
+      if (inclinePct != null) 'inclinePct': inclinePct,
+      if (resistanceLevel != null) 'resistanceLevel': resistanceLevel,
+      if (caloriesBurned != null) 'caloriesBurned': caloriesBurned,
     };
   }
 }
@@ -96,17 +120,21 @@ class WorkoutLog {
     required this.durationMinutes,
     required this.exercises,
     this.notes = '',
+    this.difficultyRating,
+    this.energyLevel,
+    this.painLevel,
   });
 
   final String id;
-
-  /// Empty string for ad-hoc sessions not started from a plan.
   final String planId;
   final String planName;
   final DateTime date;
   final int durationMinutes;
   final List<ExerciseLog> exercises;
   final String notes;
+  final String? difficultyRating;
+  final int? energyLevel;
+  final String? painLevel;
 
   double get totalVolume => exercises.fold(0.0, (s, e) => s + e.volume);
 
@@ -127,6 +155,9 @@ class WorkoutLog {
           .map((e) => ExerciseLog.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
       notes: map['notes'] as String? ?? '',
+      difficultyRating: map['difficultyRating'] as String?,
+      energyLevel: (map['energyLevel'] as num?)?.toInt(),
+      painLevel: map['painLevel'] as String?,
     );
   }
 
@@ -138,6 +169,9 @@ class WorkoutLog {
       'durationMinutes': durationMinutes,
       'exercises': exercises.map((e) => e.toMap()).toList(),
       'notes': notes,
+      if (difficultyRating != null) 'difficultyRating': difficultyRating,
+      if (energyLevel != null) 'energyLevel': energyLevel,
+      if (painLevel != null) 'painLevel': painLevel,
     };
   }
 }

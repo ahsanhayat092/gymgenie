@@ -67,38 +67,104 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   Future<void> _finishWorkout() async {
     final notesController = TextEditingController();
-    final notes = await showDialog<String>(
+    String selectedDifficulty = 'Moderate';
+    int selectedEnergy = 3;
+    String selectedPain = 'None';
+
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Finish workout'),
-        content: TextField(
-          controller: notesController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Notes (optional)',
-            hintText: 'How did it go?',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(null),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(notesController.text.trim()),
-            child: const Text('Finish'),
-          ),
-        ],
-      ),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Finish workout'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: notesController,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Notes (optional)',
+                        hintText: 'How did it go?',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('How was today\'s workout?', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: selectedDifficulty,
+                      items: const [
+                        DropdownMenuItem(value: 'Very Easy', child: Text('😎 Very Easy')),
+                        DropdownMenuItem(value: 'Easy', child: Text('🙂 Easy')),
+                        DropdownMenuItem(value: 'Moderate', child: Text('😐 Moderate')),
+                        DropdownMenuItem(value: 'Hard', child: Text('🥵 Hard')),
+                        DropdownMenuItem(value: 'Very Hard', child: Text('💀 Very Hard')),
+                      ],
+                      onChanged: (val) => setState(() => selectedDifficulty = val ?? 'Moderate'),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('How was your energy? (1-5)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Slider(
+                      value: selectedEnergy.toDouble(),
+                      min: 1,
+                      max: 5,
+                      divisions: 4,
+                      label: '$selectedEnergy',
+                      onChanged: (val) => setState(() => selectedEnergy = val.round()),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Any muscle pain / joint discomfort?', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: selectedPain,
+                      items: const [
+                        DropdownMenuItem(value: 'None', child: Text('None')),
+                        DropdownMenuItem(value: 'Mild', child: Text('Mild')),
+                        DropdownMenuItem(value: 'Moderate', child: Text('Moderate')),
+                        DropdownMenuItem(value: 'Severe', child: Text('Severe')),
+                      ],
+                      onChanged: (val) => setState(() => selectedPain = val ?? 'None'),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(null),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop({
+                      'notes': notesController.text.trim(),
+                      'difficulty': selectedDifficulty,
+                      'energy': selectedEnergy,
+                      'pain': selectedPain,
+                    });
+                  },
+                  child: const Text('Finish'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
+
     notesController.dispose();
-    if (notes == null || !mounted) return;
+    if (result == null || !mounted) return;
 
     setState(() => _finishing = true);
     try {
-      final savedLog =
-          await ref.read(activeWorkoutProvider.notifier).finish(notes: notes);
+      final savedLog = await ref.read(activeWorkoutProvider.notifier).finish(
+            notes: result['notes'] as String,
+            difficultyRating: result['difficulty'] as String,
+            energyLevel: result['energy'] as int,
+            painLevel: result['pain'] as String,
+          );
       if (!mounted) return;
       context.pushReplacement('/workout/summary', extra: savedLog);
     } catch (e) {
@@ -260,10 +326,33 @@ class _ExerciseCard extends ConsumerWidget {
   final int index;
   final ExerciseLog exercise;
 
+  void _showSubstitutionPicker(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    ExerciseLog log,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return _SubstitutionSheet(
+          exerciseLog: log,
+          onSelected: (Exercise newExercise) {
+            ref.read(activeWorkoutProvider.notifier).substituteExercise(index, newExercise);
+            Navigator.of(sheetContext).pop();
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final notifier = ref.read(activeWorkoutProvider.notifier);
+    final isCardio = exercise.exerciseName.toLowerCase().contains('cardio');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -280,38 +369,150 @@ class _ExerciseCard extends ConsumerWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
+                TextButton.icon(
+                  onPressed: () => _showSubstitutionPicker(context, ref, index, exercise),
+                  icon: const Icon(Icons.swap_horiz, size: 16),
+                  label: const Text('Substitute'),
+                ),
                 IconButton(
                   tooltip: 'Remove exercise',
+                  visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => notifier.removeExercise(index),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                _HeaderCell('SET', flex: 1),
-                _HeaderCell('REPS', flex: 2),
-                _HeaderCell('KG', flex: 2),
-                _HeaderCell('DONE', flex: 1),
-                const SizedBox(width: 40),
-              ],
-            ),
-            for (var s = 0; s < exercise.sets.length; s++)
-              _SetRow(
-                exerciseIndex: index,
-                setIndex: s,
-                set: exercise.sets[s],
-              ),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => notifier.addSet(index),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add set'),
+            if (isCardio) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: exercise.durationMinutes == null || exercise.durationMinutes == 0
+                          ? ''
+                          : '${exercise.durationMinutes!.round()}',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Duration (min)',
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        final parsed = double.tryParse(val.trim());
+                        notifier.updateCardio(index, durationMinutes: parsed ?? 0.0);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: exercise.distanceKm == null || exercise.distanceKm == 0
+                          ? ''
+                          : '${exercise.distanceKm}',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Distance (km)',
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        final parsed = double.tryParse(val.trim());
+                        notifier.updateCardio(index, distanceKm: parsed ?? 0.0);
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: exercise.speedKmh == null || exercise.speedKmh == 0
+                          ? ''
+                          : '${exercise.speedKmh}',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Speed (km/h)',
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        final parsed = double.tryParse(val.trim());
+                        notifier.updateCardio(index, speedKmh: parsed ?? 0.0);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: exercise.inclinePct == null && exercise.resistanceLevel == null
+                          ? ''
+                          : '${exercise.inclinePct ?? exercise.resistanceLevel ?? ''}',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: exercise.exerciseName.contains('Bike') || exercise.exerciseName.contains('Rowing')
+                            ? 'Resistance Lvl'
+                            : 'Incline (%)',
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        final parsed = double.tryParse(val.trim());
+                        if (exercise.exerciseName.contains('Bike') || exercise.exerciseName.contains('Rowing')) {
+                          notifier.updateCardio(index, resistanceLevel: parsed ?? 0.0);
+                        } else {
+                          notifier.updateCardio(index, inclinePct: parsed ?? 0.0);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: exercise.caloriesBurned == null || exercise.caloriesBurned == 0
+                          ? ''
+                          : '${exercise.caloriesBurned!.round()}',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Est. Calories (kcal)',
+                        isDense: true,
+                      ),
+                      onChanged: (val) {
+                        final parsed = double.tryParse(val.trim());
+                        notifier.updateCardio(index, caloriesBurned: parsed ?? 0.0);
+                      },
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  _HeaderCell('SET', flex: 1),
+                  _HeaderCell('REPS', flex: 2),
+                  _HeaderCell('KG', flex: 2),
+                  _HeaderCell('DONE', flex: 1),
+                  const SizedBox(width: 40),
+                ],
+              ),
+              for (var s = 0; s < exercise.sets.length; s++)
+                _SetRow(
+                  exerciseIndex: index,
+                  setIndex: s,
+                  set: exercise.sets[s],
+                ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => notifier.addSet(index),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add set'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -637,6 +838,147 @@ class _RestTimerOverlay extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SubstitutionSheet extends ConsumerStatefulWidget {
+  const _SubstitutionSheet({
+    required this.exerciseLog,
+    required this.onSelected,
+  });
+
+  final ExerciseLog exerciseLog;
+  final ValueChanged<Exercise> onSelected;
+
+  @override
+  ConsumerState<_SubstitutionSheet> createState() => _SubstitutionSheetState();
+}
+
+class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
+  String? _selectedReason;
+  bool _showAlternatives = false;
+
+  final List<String> _reasons = [
+    'Equipment unavailable',
+    'Too difficult',
+    'Pain/discomfort',
+    'Don\'t like this exercise',
+    'Gym is crowded',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final libraryAsync = ref.watch(exerciseLibraryProvider);
+    final theme = Theme.of(context);
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        if (!_showAlternatives) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Why substitute this exercise?',
+                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text('GymGenie will use this reason to tailor alternative exercise suggestions.'),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: _reasons.length,
+                    itemBuilder: (context, idx) {
+                      final reason = _reasons[idx];
+                      return RadioListTile<String>(
+                        title: Text(reason),
+                        value: reason,
+                        groupValue: _selectedReason,
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedReason = val;
+                            _showAlternatives = true;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return libraryAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, _) => Center(child: Text('Error loading exercises: $err')),
+          data: (library) {
+            final original = library.firstWhere(
+              (ex) => ex.name == widget.exerciseLog.exerciseName,
+              orElse: () => library.first,
+            );
+
+            final alternatives = library.where((ex) {
+              if (ex.name == widget.exerciseLog.exerciseName) return false;
+              return ex.muscleGroup == original.muscleGroup;
+            }).toList();
+
+            if (_selectedReason == 'Equipment unavailable' || _selectedReason == 'Gym is crowded') {
+              alternatives.sort((a, b) {
+                final aScore = (a.equipment.toLowerCase() == 'bodyweight' || a.equipment.toLowerCase() == 'dumbbell') ? 1 : 0;
+                final bScore = (b.equipment.toLowerCase() == 'bodyweight' || b.equipment.toLowerCase() == 'dumbbell') ? 1 : 0;
+                return bScore.compareTo(aScore);
+              });
+            } else if (_selectedReason == 'Too difficult' || _selectedReason == 'Pain/discomfort') {
+              alternatives.sort((a, b) {
+                final aScore = a.difficulty.toLowerCase() == 'beginner' ? 2 : (a.difficulty.toLowerCase() == 'intermediate' ? 1 : 0);
+                final bScore = b.difficulty.toLowerCase() == 'beginner' ? 2 : (b.difficulty.toLowerCase() == 'intermediate' ? 1 : 0);
+                return bScore.compareTo(aScore);
+              });
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'Recommended Alternatives',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: alternatives.length,
+                      itemBuilder: (context, idx) {
+                        final ex = alternatives[idx];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            title: Text(ex.name),
+                            subtitle: Text('${ex.muscleGroup} • ${ex.equipment} • ${ex.difficulty}'),
+                            trailing: const Icon(Icons.swap_horiz),
+                            onTap: () => widget.onSelected(ex),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

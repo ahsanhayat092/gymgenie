@@ -33,14 +33,32 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
   /// Starts a session from a plan. Each planned exercise gets
   /// `targetSets` empty sets (completed = false) prefilled with the
   /// plan's target reps/weight.
-  void startFromPlan(WorkoutPlan plan) {
+  void startFromPlan(WorkoutPlan plan, {WorkoutLog? lastLog}) {
     final exercises = plan.exercises.map((pe) {
+      var targetSets = pe.targetSets;
+      var targetReps = pe.targetReps;
+      var targetWeight = pe.targetWeight;
+
+      if (lastLog != null) {
+        final diff = lastLog.difficultyRating?.toLowerCase();
+        final pain = lastLog.painLevel?.toLowerCase();
+
+        if (diff == 'very easy' || diff == 'easy') {
+          // Progressively increase target weight if it was too easy
+          targetWeight += 2.5;
+        } else if (diff == 'very hard' || pain == 'moderate' || pain == 'severe') {
+          // Decrease volume by ~15% if too hard or in pain
+          targetSets = (targetSets * 0.85).round().clamp(2, 6);
+          targetReps = (targetReps * 0.85).round().clamp(1, 30);
+        }
+      }
+
       final sets = List<SetLog>.generate(
-        pe.targetSets,
+        targetSets,
         (i) => SetLog(
           setNumber: i + 1,
-          reps: pe.targetReps,
-          weight: pe.targetWeight,
+          reps: targetReps,
+          weight: targetWeight,
           completed: false,
         ),
       );
@@ -157,7 +175,12 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
   /// Builds the [WorkoutLog] (duration = elapsed minutes, minimum 1),
   /// saves it via [LogRepository.addLog], clears the state and returns
   /// the saved log (with its Firestore id).
-  Future<WorkoutLog> finish({String notes = ''}) async {
+  Future<WorkoutLog> finish({
+    String notes = '',
+    String? difficultyRating,
+    int? energyLevel,
+    String? painLevel,
+  }) async {
     final current = state;
     if (current == null) {
       throw StateError('No active workout to finish');
@@ -171,6 +194,9 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
       durationMinutes: elapsed < 1 ? 1 : elapsed,
       exercises: current.exercises,
       notes: notes,
+      difficultyRating: difficultyRating,
+      energyLevel: energyLevel,
+      painLevel: painLevel,
     );
     final id = await _logRepo.addLog(log);
     final saved = WorkoutLog(
@@ -181,6 +207,9 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
       durationMinutes: log.durationMinutes,
       exercises: log.exercises,
       notes: log.notes,
+      difficultyRating: log.difficultyRating,
+      energyLevel: log.energyLevel,
+      painLevel: log.painLevel,
     );
     state = null;
     return saved;
@@ -190,11 +219,65 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
     state = null;
   }
 
+  void updateCardio(
+    int exerciseIndex, {
+    double? durationMinutes,
+    double? distanceKm,
+    double? speedKmh,
+    double? inclinePct,
+    double? resistanceLevel,
+    double? caloriesBurned,
+  }) {
+    final current = state;
+    if (current == null) return;
+    if (exerciseIndex < 0 || exerciseIndex >= current.exercises.length) return;
+    final exercise = current.exercises[exerciseIndex];
+
+    final updated = ExerciseLog(
+      exerciseId: exercise.exerciseId,
+      exerciseName: exercise.exerciseName,
+      sets: exercise.sets,
+      durationMinutes: durationMinutes ?? exercise.durationMinutes,
+      distanceKm: distanceKm ?? exercise.distanceKm,
+      speedKmh: speedKmh ?? exercise.speedKmh,
+      inclinePct: inclinePct ?? exercise.inclinePct,
+      resistanceLevel: resistanceLevel ?? exercise.resistanceLevel,
+      caloriesBurned: caloriesBurned ?? exercise.caloriesBurned,
+    );
+    _replaceExercise(current, exerciseIndex, updated);
+  }
+
+  void substituteExercise(int index, Exercise newExercise) {
+    final current = state;
+    if (current == null) return;
+    if (index < 0 || index >= current.exercises.length) return;
+    final exercise = current.exercises[index];
+
+    final updated = ExerciseLog(
+      exerciseId: newExercise.id,
+      exerciseName: newExercise.name,
+      sets: exercise.sets,
+      durationMinutes: exercise.durationMinutes,
+      distanceKm: exercise.distanceKm,
+      speedKmh: exercise.speedKmh,
+      inclinePct: exercise.inclinePct,
+      resistanceLevel: exercise.resistanceLevel,
+      caloriesBurned: exercise.caloriesBurned,
+    );
+    _replaceExercise(current, index, updated);
+  }
+
   ExerciseLog _copyExercise(ExerciseLog exercise, {List<SetLog>? sets}) {
     return ExerciseLog(
       exerciseId: exercise.exerciseId,
       exerciseName: exercise.exerciseName,
       sets: sets ?? exercise.sets,
+      durationMinutes: exercise.durationMinutes,
+      distanceKm: exercise.distanceKm,
+      speedKmh: exercise.speedKmh,
+      inclinePct: exercise.inclinePct,
+      resistanceLevel: exercise.resistanceLevel,
+      caloriesBurned: exercise.caloriesBurned,
     );
   }
 

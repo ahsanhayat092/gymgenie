@@ -9,6 +9,8 @@ import 'package:gymgenie/core/widgets/loading_view.dart';
 import 'package:gymgenie/features/plans/data/plan_repository.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
 import 'package:gymgenie/features/workout/application/active_workout_controller.dart';
+import 'package:gymgenie/features/workout/data/log_repository.dart';
+import 'package:gymgenie/features/workout/domain/workout_log.dart';
 
 /// Loads a single plan by id.
 final planDetailProvider =
@@ -238,9 +240,17 @@ class PlanDetailScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () {
+                  final logs = ref.read(workoutLogsProvider).valueOrNull ?? [];
+                  WorkoutLog? lastLog;
+                  for (final log in logs) {
+                    if (log.planId == plan.id) {
+                      lastLog = log;
+                      break;
+                    }
+                  }
                   ref
                       .read(activeWorkoutProvider.notifier)
-                      .startFromPlan(plan);
+                      .startFromPlan(plan, lastLog: lastLog);
                   context.push('/workout/active');
                 },
                 icon: const Icon(Icons.play_arrow),
