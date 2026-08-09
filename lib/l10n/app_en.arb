@@ -1,0 +1,12 @@
+{
+  "profileTitle": "Profile",
+  "restTimerTitle": "Active Workout Rest Timer",
+  "restTimerDesc": "Trigger a countdown rest timer when you check a set as completed.",
+  "restTimerDuration": "Rest Timer Duration",
+  "backupData": "Backup & Synchronization",
+  "backupDesc": "Create offline plan codes or restore saved profiles from GymGenie.",
+  "logoutButton": "Sign Out",
+  "themeMode": "App Theme",
+  "languageTitle": "Language",
+  "languageDesc": "Change application translation localizations."
+}

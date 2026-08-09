@@ -1,0 +1,12 @@
+{
+  "profileTitle": "Profil",
+  "restTimerTitle": "Minuteur de Repos Actif",
+  "restTimerDesc": "Déclenche un minuteur de repos lorsque vous terminez une série.",
+  "restTimerDuration": "Durée du Minuteur de Repos",
+  "backupData": "Sauvegarde & Synchronisation",
+  "backupDesc": "Créez des codes de plan hors ligne ou restaurez des profils enregistrés depuis GymGenie.",
+  "logoutButton": "Se Déconnecter",
+  "themeMode": "Thème de l'Application",
+  "languageTitle": "Langue",
+  "languageDesc": "Modifier les localisations de traduction de l'application."
+}

@@ -7,6 +7,7 @@ import 'package:gymgenie/core/widgets/loading_view.dart';
 import 'package:gymgenie/features/auth/application/auth_providers.dart';
 import 'package:gymgenie/features/profile/data/profile_repository.dart';
 import 'package:gymgenie/features/profile/domain/user_profile.dart';
+import 'package:gymgenie/l10n/app_localizations.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -62,9 +63,10 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(l.profileTitle)),
       body: profileAsync.when(
         loading: () => const LoadingView(),
         error: (error, _) => ErrorView(
@@ -165,8 +167,8 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       SwitchListTile(
                         secondary: const Icon(Icons.timer_outlined),
-                        title: const Text('Rest Timer'),
-                        subtitle: const Text('Auto-start rest timer between sets'),
+                        title: Text(l.restTimerTitle),
+                        subtitle: Text(l.restTimerDesc),
                         value: profile.restTimerEnabled,
                         onChanged: (val) {
                           ref.read(profileRepositoryProvider).saveProfile(
@@ -178,7 +180,7 @@ class ProfileScreen extends ConsumerWidget {
                         const Divider(height: 1),
                         ListTile(
                           leading: const Icon(Icons.snooze_outlined),
-                          title: const Text('Rest Duration'),
+                          title: Text(l.restTimerDuration),
                           trailing: DropdownButton<int>(
                             value: profile.restTimerDuration,
                             underline: const SizedBox(),
@@ -210,7 +212,7 @@ class ProfileScreen extends ConsumerWidget {
               OutlinedButton.icon(
                 onPressed: () => _confirmSignOut(context, ref),
                 icon: const Icon(Icons.logout),
-                label: const Text('Sign Out'),
+                label: Text(l.logoutButton),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,
                 ),

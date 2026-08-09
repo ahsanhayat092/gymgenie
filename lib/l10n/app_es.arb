@@ -1,0 +1,12 @@
+{
+  "profileTitle": "Perfil",
+  "restTimerTitle": "Temporizador de Descanso Activo",
+  "restTimerDesc": "Inicia un temporizador de descanso al completar una serie.",
+  "restTimerDuration": "Duración del Descanso",
+  "backupData": "Copia de Seguridad y Sincronización",
+  "backupDesc": "Cree códigos de planes fuera de línea o restaure perfiles guardados de GymGenie.",
+  "logoutButton": "Cerrar Sesión",
+  "themeMode": "Tema de la Aplicación",
+  "languageTitle": "Idioma",
+  "languageDesc": "Cambiar las localizaciones de traducción de la aplicación."
+}
