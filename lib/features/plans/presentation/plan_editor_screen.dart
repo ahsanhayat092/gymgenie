@@ -1,0 +1,529 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:gymgenie/core/widgets/error_view.dart';
+import 'package:gymgenie/core/widgets/loading_view.dart';
+import 'package:gymgenie/features/exercises/data/exercise_repository.dart';
+import 'package:gymgenie/features/exercises/domain/exercise.dart';
+import 'package:gymgenie/features/plans/data/plan_repository.dart';
+import 'package:gymgenie/features/plans/domain/workout_plan.dart';
+
+/// Creates a new plan ([planId] == null) or edits an existing one.
+class PlanEditorScreen extends ConsumerStatefulWidget {
+  const PlanEditorScreen({super.key, this.planId});
+
+  /// null = create mode.
+  final String? planId;
+
+  @override
+  ConsumerState<PlanEditorScreen> createState() => _PlanEditorScreenState();
+}
+
+class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  List<PlannedExercise> _exercises = [];
+
+  /// Original plan in edit mode (keeps id + createdAt on save).
+  WorkoutPlan? _original;
+
+  bool _loading = false;
+  String? _loadError;
+  bool _saving = false;
+
+  bool get _isEdit => widget.planId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEdit) {
+      _loading = true;
+      _loadPlan();
+    }
+  }
+
+  Future<void> _loadPlan() async {
+    try {
+      final plan =
+          await ref.read(planRepositoryProvider).getPlan(widget.planId!);
+      if (!mounted) return;
+      if (plan == null) {
+        setState(() {
+          _loadError = 'Plan not found';
+          _loading = false;
+        });
+        return;
+      }
+      final exercises = [...plan.exercises]
+        ..sort((a, b) => a.order.compareTo(b.order));
+      setState(() {
+        _original = plan;
+        _nameController.text = plan.name;
+        _descriptionController.text = plan.description;
+        _exercises = exercises;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  List<PlannedExercise> _reindexed(List<PlannedExercise> exercises) {
+    return [
+      for (var i = 0; i < exercises.length; i++)
+        exercises[i].copyWith(order: i),
+    ];
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    setState(() {
+      var target = newIndex;
+      if (target > oldIndex) target--;
+      final item = _exercises.removeAt(oldIndex);
+      _exercises.insert(target, item);
+      _exercises = _reindexed(_exercises);
+    });
+  }
+
+  void _removeExercise(int index) {
+    setState(() {
+      _exercises.removeAt(index);
+      _exercises = _reindexed(_exercises);
+    });
+  }
+
+  void _updateExercise(int index, PlannedExercise updated) {
+    setState(() {
+      _exercises[index] = updated;
+    });
+  }
+
+  Future<void> _addExercise() async {
+    final selected = await showModalBottomSheet<Exercise>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _ExercisePickerSheet(),
+    );
+    if (selected == null) return;
+    setState(() {
+      _exercises = [
+        ..._exercises,
+        PlannedExercise(
+          exerciseId: selected.id,
+          exerciseName: selected.name,
+          targetSets: 3,
+          targetReps: 10,
+          targetWeight: 0,
+          order: _exercises.length,
+        ),
+      ];
+    });
+  }
+
+  Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_exercises.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add at least one exercise')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    final repo = ref.read(planRepositoryProvider);
+    try {
+      final exercises = _reindexed(_exercises);
+      if (_isEdit) {
+        final original = _original;
+        if (original == null) {
+          throw StateError('Plan not loaded');
+        }
+        // Keeps the original id and createdAt; repository stamps updatedAt.
+        await repo.updatePlan(
+          original.copyWith(
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim(),
+            exercises: exercises,
+          ),
+        );
+      } else {
+        final now = DateTime.now();
+        await repo.createPlan(
+          WorkoutPlan(
+            id: '',
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim(),
+            exercises: exercises,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+      }
+      if (!context.mounted) return;
+      context.pop();
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(_isEdit ? 'Edit Plan' : 'New Plan')),
+      body: _loading
+          ? const LoadingView()
+          : _loadError != null
+              ? ErrorView(
+                  message: _loadError!,
+                  onRetry: () {
+                    setState(() {
+                      _loadError = null;
+                      _loading = true;
+                    });
+                    _loadPlan();
+                  },
+                )
+              : Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Plan name',
+                              ),
+                              textCapitalization: TextCapitalization.sentences,
+                              validator: (value) =>
+                                  (value == null || value.trim().isEmpty)
+                                      ? 'Name is required'
+                                      : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _descriptionController,
+                              decoration: const InputDecoration(
+                                labelText: 'Description (optional)',
+                              ),
+                              textCapitalization: TextCapitalization.sentences,
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: _exercises.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No exercises yet.\nTap "Add Exercise" below.',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              )
+                            : ReorderableListView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16),
+                                itemCount: _exercises.length,
+                                onReorder: _onReorder,
+                                itemBuilder: (context, index) {
+                                  final exercise = _exercises[index];
+                                  return _PlannedExerciseCard(
+                                    key: ValueKey(
+                                        '${exercise.exerciseId}-$index'),
+                                    exercise: exercise,
+                                    onChanged: (updated) =>
+                                        _updateExercise(index, updated),
+                                    onRemove: () => _removeExercise(index),
+                                  );
+                                },
+                              ),
+                      ),
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: _addExercise,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add Exercise'),
+                              ),
+                              const SizedBox(height: 8),
+                              FilledButton(
+                                onPressed: _saving ? null : _save,
+                                child: _saving
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : const Text('Save Plan'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+    );
+  }
+}
+
+/// Expansion tile editing a single [PlannedExercise]'s targets.
+class _PlannedExerciseCard extends StatelessWidget {
+  const _PlannedExerciseCard({
+    super.key,
+    required this.exercise,
+    required this.onChanged,
+    required this.onRemove,
+  });
+
+  final PlannedExercise exercise;
+  final ValueChanged<PlannedExercise> onChanged;
+  final VoidCallback onRemove;
+
+  String _formatWeight(double weight) =>
+      weight == weight.roundToDouble() ? '${weight.toInt()}' : '$weight';
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ExpansionTile(
+        title: Text(exercise.exerciseName),
+        subtitle: Text(
+          '${exercise.targetSets} sets × ${exercise.targetReps} reps'
+          '${exercise.targetWeight > 0 ? ' @ ${_formatWeight(exercise.targetWeight)} kg' : ''}',
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        children: [
+          _StepperRow(
+            label: 'Sets',
+            value: '${exercise.targetSets}',
+            onDecrement: exercise.targetSets > 1
+                ? () => onChanged(
+                    exercise.copyWith(targetSets: exercise.targetSets - 1))
+                : null,
+            onIncrement: () => onChanged(
+                exercise.copyWith(targetSets: exercise.targetSets + 1)),
+          ),
+          _StepperRow(
+            label: 'Reps',
+            value: '${exercise.targetReps}',
+            onDecrement: exercise.targetReps > 1
+                ? () => onChanged(
+                    exercise.copyWith(targetReps: exercise.targetReps - 1))
+                : null,
+            onIncrement: () => onChanged(
+                exercise.copyWith(targetReps: exercise.targetReps + 1)),
+          ),
+          _StepperRow(
+            label: 'Weight (kg)',
+            value: _formatWeight(exercise.targetWeight),
+            onDecrement: exercise.targetWeight > 0
+                ? () {
+                    final next = exercise.targetWeight - 2.5;
+                    onChanged(exercise.copyWith(
+                        targetWeight: next < 0 ? 0 : next));
+                  }
+                : null,
+            onIncrement: () => onChanged(exercise.copyWith(
+                targetWeight: exercise.targetWeight + 2.5)),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onRemove,
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Remove'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperRow extends StatelessWidget {
+  const _StepperRow({
+    required this.label,
+    required this.value,
+    required this.onDecrement,
+    required this.onIncrement,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback? onDecrement;
+  final VoidCallback? onIncrement;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          IconButton(
+            onPressed: onDecrement,
+            icon: const Icon(Icons.remove_circle_outline),
+          ),
+          SizedBox(
+            width: 48,
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          IconButton(
+            onPressed: onIncrement,
+            icon: const Icon(Icons.add_circle_outline),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Modal bottom sheet for picking an exercise from the library,
+/// with name search and muscle-group filter chips.
+class _ExercisePickerSheet extends ConsumerStatefulWidget {
+  const _ExercisePickerSheet();
+
+  @override
+  ConsumerState<_ExercisePickerSheet> createState() =>
+      _ExercisePickerSheetState();
+}
+
+class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+  String? _selectedGroup;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final library = ref.watch(exerciseLibraryProvider);
+    final query = _query.trim().toLowerCase();
+
+    return FractionallySizedBox(
+      heightFactor: 0.85,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              onChanged: (value) => setState(() => _query = value),
+              decoration: const InputDecoration(
+                hintText: 'Search exercises',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 56,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: const Text('All'),
+                    selected: _selectedGroup == null,
+                    onSelected: (_) => setState(() => _selectedGroup = null),
+                  ),
+                ),
+                for (final group in ExerciseRepository.muscleGroups)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(group),
+                      selected: _selectedGroup == group,
+                      onSelected: (_) =>
+                          setState(() => _selectedGroup = group),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: library.when(
+              loading: () => const LoadingView(),
+              error: (error, _) => ErrorView(
+                message: 'Failed to load exercises',
+                onRetry: () => ref.invalidate(exerciseLibraryProvider),
+              ),
+              data: (exercises) {
+                final filtered = exercises.where((e) {
+                  if (_selectedGroup != null &&
+                      e.muscleGroup != _selectedGroup) {
+                    return false;
+                  }
+                  if (query.isNotEmpty &&
+                      !e.name.toLowerCase().contains(query)) {
+                    return false;
+                  }
+                  return true;
+                }).toList();
+                if (filtered.isEmpty) {
+                  return const Center(child: Text('No exercises found'));
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final exercise = filtered[index];
+                    return ListTile(
+                      title: Text(exercise.name),
+                      subtitle: Text(
+                        '${exercise.muscleGroup} • ${exercise.equipment}',
+                      ),
+                      onTap: () => Navigator.of(context).pop(exercise),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

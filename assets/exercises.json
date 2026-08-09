@@ -1,0 +1,704 @@
+[
+  {
+    "id": "barbell-bench-press",
+    "name": "Barbell Bench Press",
+    "muscleGroup": "Chest",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Lie flat on a bench with your feet planted on the floor and grip the bar slightly wider than shoulder-width. Lower the bar under control to your mid-chest, keeping your elbows at about a 45-degree angle. Press the bar back up explosively until your arms are fully extended.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/barbell-bench-press.gif"
+  },
+  {
+    "id": "incline-dumbbell-press",
+    "name": "Incline Dumbbell Press",
+    "muscleGroup": "Chest",
+    "equipment": "Dumbbell",
+    "difficulty": "Intermediate",
+    "instructions": "Set a bench to a 30-45 degree incline and sit back with a dumbbell in each hand at shoulder height. Press the dumbbells up and slightly together until your arms are extended. Lower them slowly back to the starting position, feeling a stretch in your upper chest.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/dumbbell-incline-bench-press.gif"
+  },
+  {
+    "id": "push-up",
+    "name": "Push-Up",
+    "muscleGroup": "Chest",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Start in a high plank with your hands slightly wider than your shoulders and your body in a straight line. Lower your chest toward the floor by bending your elbows, keeping them tucked at about 45 degrees. Push back up to the starting position without letting your hips sag.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/push-up.gif"
+  },
+  {
+    "id": "cable-fly",
+    "name": "Cable Fly",
+    "muscleGroup": "Chest",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Set both pulleys to chest height and grab a handle in each hand, stepping forward into a staggered stance. With a slight bend in your elbows, sweep the handles together in front of your chest in a wide arc. Slowly return to the start, controlling the weight on the way back.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/cable-standing-fly.gif"
+  },
+  {
+    "id": "dumbbell-fly",
+    "name": "Dumbbell Fly",
+    "muscleGroup": "Chest",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Lie on a flat bench holding dumbbells above your chest with palms facing each other. Lower the weights out to your sides in a wide arc, keeping a soft bend in your elbows. Stop when you feel a stretch in your chest, then squeeze your pecs to bring the dumbbells back together.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/dumbbell-fly.gif"
+  },
+  {
+    "id": "chest-dip",
+    "name": "Chest Dip",
+    "muscleGroup": "Chest",
+    "equipment": "Bodyweight",
+    "difficulty": "Advanced",
+    "instructions": "Grip parallel bars and support your body with straight arms, leaning your torso forward about 30 degrees. Lower yourself until your shoulders are just below your elbows, keeping the forward lean to emphasize the chest. Press back up to full arm extension without locking out aggressively.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/chest-dip.gif"
+  },
+  {
+    "id": "machine-chest-press",
+    "name": "Machine Chest Press",
+    "muscleGroup": "Chest",
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": "Adjust the seat so the handles line up with your mid-chest and sit with your back flat against the pad. Press the handles forward until your arms are extended, squeezing your chest at the top. Return slowly to the start position without letting the weight stack touch down.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/lever-chest-press.gif"
+  },
+  {
+    "id": "decline-barbell-bench-press",
+    "name": "Decline Barbell Bench Press",
+    "muscleGroup": "Chest",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Secure your legs on a decline bench and grip the bar slightly wider than shoulder-width. Lower the bar to your lower chest with control, keeping your wrists stacked over your elbows. Press the bar back up until your arms are fully extended.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/barbell-decline-bench-press.gif"
+  },
+  {
+    "id": "deadlift",
+    "name": "Deadlift",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "difficulty": "Advanced",
+    "instructions": "Stand with the bar over your mid-foot, hinge at the hips, and grip the bar just outside your legs. Brace your core, flatten your back, and drive through your heels to stand up with the bar, keeping it close to your body. Lock out your hips and knees at the top, then reverse the movement with control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/glutes/barbell-deadlift.gif"
+  },
+  {
+    "id": "pull-up",
+    "name": "Pull-Up",
+    "muscleGroup": "Back",
+    "equipment": "Bodyweight",
+    "difficulty": "Intermediate",
+    "instructions": "Hang from a bar with an overhand grip slightly wider than your shoulders. Pull your chest toward the bar by driving your elbows down and back, keeping your core tight. Lower yourself under control until your arms are fully extended.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/lats/pull-up.gif"
+  },
+  {
+    "id": "bent-over-barbell-row",
+    "name": "Bent-Over Barbell Row",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Hinge forward at the hips with a flat back until your torso is roughly 45 degrees to the floor, holding the bar with an overhand grip. Pull the bar toward your lower ribs, squeezing your shoulder blades together at the top. Lower the bar slowly back to full arm extension.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/upper-back/barbell-bent-over-row.gif"
+  },
+  {
+    "id": "lat-pulldown",
+    "name": "Lat Pulldown",
+    "muscleGroup": "Back",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Sit at the pulldown machine with your thighs secured and grab the bar with a wide overhand grip. Pull the bar down to your upper chest, driving your elbows down and slightly back. Slowly let the bar rise back up, keeping tension on your lats throughout.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/lats/cable-lat-pulldown-full-range-of-motion.gif"
+  },
+  {
+    "id": "seated-cable-row",
+    "name": "Seated Cable Row",
+    "muscleGroup": "Back",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Sit at the row station with your feet on the platform and knees slightly bent, holding the handle with both hands. Pull the handle toward your abdomen while keeping your torso upright and squeezing your shoulder blades together. Extend your arms back out slowly without rounding your lower back.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/lats/cable-seated-row.gif"
+  },
+  {
+    "id": "single-arm-dumbbell-row",
+    "name": "Single-Arm Dumbbell Row",
+    "muscleGroup": "Back",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Place one knee and the same-side hand on a bench, holding a dumbbell in your free hand with your arm extended. Row the dumbbell up toward your hip, keeping your elbow close to your body and your back flat. Lower the weight under control and repeat before switching sides.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/upper-back/dumbbell-one-arm-bent-over-row.gif"
+  },
+  {
+    "id": "t-bar-row",
+    "name": "T-Bar Row",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Straddle the bar with your hips hinged back and torso at about 45 degrees, gripping the handles with both hands. Pull the weight toward your chest, keeping your elbows tucked and your core braced. Lower under control until your arms are extended without rounding your back.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/upper-back/lever-reverse-t-bar-row.gif"
+  },
+  {
+    "id": "back-extension",
+    "name": "Back Extension",
+    "muscleGroup": "Back",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Position yourself on a 45-degree hyperextension bench with your hips just above the pad and ankles secured. Cross your arms over your chest and lower your torso toward the floor in a controlled hinge. Raise back up by contracting your lower back and glutes until your body forms a straight line.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/spine/lever-back-extension.gif"
+  },
+  {
+    "id": "overhead-barbell-press",
+    "name": "Overhead Barbell Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Stand with the bar resting on your front shoulders, hands just outside shoulder-width and core braced. Press the bar straight overhead, moving your head slightly back and then through as the bar passes. Lock out your arms at the top, then lower the bar back to the starting position with control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/barbell-seated-overhead-press.gif"
+  },
+  {
+    "id": "dumbbell-shoulder-press",
+    "name": "Dumbbell Shoulder Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Sit on a bench with back support holding dumbbells at shoulder height, palms facing forward. Press the dumbbells overhead until your arms are extended, keeping them slightly in front of your body. Lower back to shoulder height slowly and repeat.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/dumbbell-seated-shoulder-press.gif"
+  },
+  {
+    "id": "lateral-raise",
+    "name": "Lateral Raise",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Stand tall holding dumbbells at your sides with a slight bend in your elbows. Raise the weights out to your sides until your arms are parallel to the floor, leading with your elbows. Lower them back down slowly, avoiding any swinging or momentum.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/dumbbell-lateral-raise.gif"
+  },
+  {
+    "id": "rear-delt-fly",
+    "name": "Rear Delt Fly",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Hinge forward at the hips with a flat back, holding dumbbells hanging below your shoulders with palms facing each other. Raise the weights out to your sides in a wide arc, squeezing your rear delts at the top. Lower slowly back to the start without letting your torso bounce.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/dumbbell-rear-fly.gif"
+  },
+  {
+    "id": "face-pull",
+    "name": "Face Pull",
+    "muscleGroup": "Shoulders",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Set a rope attachment on a cable pulley at upper-chest height and grab it with both hands, palms facing in. Pull the rope toward your forehead, flaring your elbows out and rotating your hands back at the end. Squeeze your rear delts and upper back, then return under control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/cable-standing-rear-delt-row-with-rope.gif"
+  },
+  {
+    "id": "arnold-press",
+    "name": "Arnold Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "difficulty": "Intermediate",
+    "instructions": "Sit holding dumbbells in front of your shoulders with your palms facing you and elbows tucked. As you press the weights up, rotate your palms outward so they face forward at the top. Reverse the rotation on the way down to return to the starting position.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/dumbbell-arnold-press-v-2.gif"
+  },
+  {
+    "id": "upright-row",
+    "name": "Upright Row",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Stand holding a barbell with a narrow overhand grip, arms extended in front of your thighs. Pull the bar straight up along your body to chest height, leading with your elbows. Lower the bar back down slowly, keeping the movement smooth and controlled.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/barbell-upright-row-v-2.gif"
+  },
+  {
+    "id": "dumbbell-shrug",
+    "name": "Dumbbell Shrug",
+    "muscleGroup": "Shoulders",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Stand tall holding a dumbbell in each hand at your sides with arms fully extended. Shrug your shoulders straight up toward your ears as high as possible, squeezing your traps at the top. Lower the weights slowly back down without rolling your shoulders.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/traps/dumbbell-shrug.gif"
+  },
+  {
+    "id": "barbell-back-squat",
+    "name": "Barbell Back Squat",
+    "muscleGroup": "Legs",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Position the bar on your upper back, unrack it, and stand with your feet shoulder-width apart. Sit your hips back and bend your knees to lower until your thighs are at least parallel to the floor, keeping your chest up. Drive through your whole foot to stand back up, keeping your knees tracking over your toes.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/glutes/barbell-full-squat-back-pov.gif"
+  },
+  {
+    "id": "leg-press",
+    "name": "Leg Press",
+    "muscleGroup": "Legs",
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": "Sit in the leg press machine with your feet shoulder-width apart on the platform and your back flat against the pad. Lower the platform by bending your knees until they reach roughly 90 degrees, keeping your heels planted. Press the platform back up without locking your knees at the top.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/glutes/sled-45-leg-press.gif"
+  },
+  {
+    "id": "romanian-deadlift",
+    "name": "Romanian Deadlift",
+    "muscleGroup": "Legs",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Stand holding a barbell at hip level with an overhand grip and soft knees. Hinge at your hips, pushing them back as you lower the bar along your thighs, keeping your back flat. Lower until you feel a strong stretch in your hamstrings, then drive your hips forward to stand back up.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/glutes/barbell-romanian-deadlift.gif"
+  },
+  {
+    "id": "walking-lunge",
+    "name": "Walking Lunge",
+    "muscleGroup": "Legs",
+    "equipment": "Dumbbell",
+    "difficulty": "Intermediate",
+    "instructions": "Stand tall holding a dumbbell in each hand at your sides. Step forward into a lunge, lowering your back knee toward the floor while keeping your front knee stacked over your ankle. Push through your front foot to step your back leg forward into the next lunge, alternating legs as you move.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/glutes/walking-lunge.gif"
+  },
+  {
+    "id": "leg-curl",
+    "name": "Leg Curl",
+    "muscleGroup": "Legs",
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": "Lie face down on the leg curl machine with the pad resting just above your heels. Curl your legs up by bending your knees, squeezing your hamstrings at the top of the movement. Lower the weight back down slowly without letting the stack touch.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/hamstrings/lever-lying-leg-curl.gif"
+  },
+  {
+    "id": "leg-extension",
+    "name": "Leg Extension",
+    "muscleGroup": "Legs",
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": "Sit on the leg extension machine with the pad across your shins and your back against the seat. Extend your knees to lift the weight until your legs are straight, squeezing your quads at the top. Lower back down under control, keeping the movement smooth.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/quads/lever-leg-extension.gif"
+  },
+  {
+    "id": "standing-calf-raise",
+    "name": "Standing Calf Raise",
+    "muscleGroup": "Legs",
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": "Stand on the platform of a calf raise machine with the pads on your shoulders and the balls of your feet on the edge. Lower your heels below the platform to stretch your calves. Press up onto your toes as high as possible, pausing briefly at the top before lowering again.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/calves/barbell-standing-calf-raise.gif"
+  },
+  {
+    "id": "bulgarian-split-squat",
+    "name": "Bulgarian Split Squat",
+    "muscleGroup": "Legs",
+    "equipment": "Dumbbell",
+    "difficulty": "Advanced",
+    "instructions": "Stand a few feet in front of a bench and rest the top of your rear foot on it, holding dumbbells at your sides. Lower your body by bending your front knee until your front thigh is roughly parallel to the floor, keeping your torso upright. Drive through your front foot to return to the top, then repeat before switching legs.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/quads/dumbbell-single-leg-split-squat.gif"
+  },
+  {
+    "id": "barbell-curl",
+    "name": "Barbell Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "instructions": "Stand holding a barbell with an underhand grip at shoulder width, arms fully extended. Curl the bar up toward your shoulders, keeping your elbows pinned at your sides. Lower the bar slowly back to full extension without swinging your torso.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/barbell-curl.gif"
+  },
+  {
+    "id": "dumbbell-hammer-curl",
+    "name": "Dumbbell Hammer Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Stand holding dumbbells at your sides with your palms facing each other. Curl the weights up while keeping the neutral grip, elbows fixed at your sides. Lower slowly and repeat, alternating arms or curling both together.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/dumbbell-hammer-curl.gif"
+  },
+  {
+    "id": "tricep-pushdown",
+    "name": "Tricep Pushdown",
+    "muscleGroup": "Arms",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Stand facing a high cable pulley holding the bar or rope with an overhand grip, elbows tucked at your sides. Push the attachment down until your arms are fully extended, squeezing your triceps at the bottom. Let the weight rise slowly back to about 90 degrees of elbow bend without moving your upper arms.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/triceps/cable-pushdown.gif"
+  },
+  {
+    "id": "skull-crusher",
+    "name": "Skull Crusher",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Lie on a flat bench holding an EZ bar above your chest with a narrow overhand grip. Keeping your upper arms vertical and still, bend only at the elbows to lower the bar toward your forehead. Extend your elbows to press the bar back to the starting position.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/triceps/barbell-lying-triceps-extension-skull-crusher.gif"
+  },
+  {
+    "id": "incline-dumbbell-curl",
+    "name": "Incline Dumbbell Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Dumbbell",
+    "difficulty": "Intermediate",
+    "instructions": "Sit back on a bench set to about 45-60 degrees with dumbbells hanging at your sides, palms facing forward. Curl the weights up without letting your elbows drift forward, stretching the long head of the biceps. Lower slowly back to a full hang and repeat.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/dumbbell-incline-biceps-curl.gif"
+  },
+  {
+    "id": "overhead-tricep-extension",
+    "name": "Overhead Tricep Extension",
+    "muscleGroup": "Arms",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Sit or stand holding one dumbbell with both hands above your head, arms extended. Lower the dumbbell behind your head by bending your elbows, keeping your upper arms close to your ears. Extend your arms back to the top, squeezing your triceps.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/triceps/cable-high-pulley-overhead-tricep-extension.gif"
+  },
+  {
+    "id": "preacher-curl",
+    "name": "Preacher Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Sit at a preacher bench with your upper arms resting on the pad, holding an EZ bar with an underhand grip. Curl the bar up toward your shoulders, keeping your arms glued to the pad. Lower under control to near-full extension without locking out hard at the bottom.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/barbell-preacher-curl.gif"
+  },
+  {
+    "id": "dumbbell-kickback",
+    "name": "Dumbbell Kickback",
+    "muscleGroup": "Arms",
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "instructions": "Hinge forward with one hand supported on a bench, holding a dumbbell in the other hand with your elbow bent at 90 degrees and upper arm parallel to your torso. Extend your arm straight back until it is fully straightened, squeezing the tricep. Return to the bent position slowly and repeat before switching sides.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/triceps/dumbbell-kickback.gif"
+  },
+  {
+    "id": "plank",
+    "name": "Plank",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Support yourself on your forearms and toes with your elbows directly under your shoulders. Keep your body in a straight line from head to heels, bracing your core and squeezing your glutes. Hold the position without letting your hips sag or pike up.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/weighted-front-plank.gif"
+  },
+  {
+    "id": "hanging-leg-raise",
+    "name": "Hanging Leg Raise",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Intermediate",
+    "instructions": "Hang from a pull-up bar with straight arms and a firm grip. Raise your legs by curling your pelvis up, lifting your knees or straight legs to at least hip height without swinging. Lower them back down slowly, staying in control throughout.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/hanging-leg-raise.gif"
+  },
+  {
+    "id": "cable-crunch",
+    "name": "Cable Crunch",
+    "muscleGroup": "Core",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Kneel facing a high cable pulley holding a rope attachment beside your head with both hands. Crunch your torso down toward the floor by flexing your spine, keeping your hips still. Squeeze your abs at the bottom, then rise slowly back to the start.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/cable-kneeling-crunch.gif"
+  },
+  {
+    "id": "russian-twist",
+    "name": "Russian Twist",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Sit on the floor with your knees bent and feet lifted, leaning back slightly with a straight spine. Twist your torso to one side, bringing your hands beside your hip. Rotate to the other side in a controlled motion, keeping your core engaged throughout.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/russian-twist.gif"
+  },
+  {
+    "id": "ab-wheel-rollout",
+    "name": "Ab Wheel Rollout",
+    "muscleGroup": "Core",
+    "equipment": "Other",
+    "difficulty": "Advanced",
+    "instructions": "Kneel on the floor holding an ab wheel with both hands under your shoulders. Roll the wheel forward slowly, extending your body while keeping your core braced and back flat. Roll out as far as you can control, then pull yourself back to the start using your abs.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/wheel-rollerout.gif"
+  },
+  {
+    "id": "bicycle-crunch",
+    "name": "Bicycle Crunch",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Lie on your back with your hands behind your head and legs lifted with knees bent at 90 degrees. Bring one elbow toward the opposite knee while extending the other leg, rotating through your torso. Alternate sides in a smooth pedaling motion without pulling on your neck.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/band-bicycle-crunch.gif"
+  },
+  {
+    "id": "mountain-climbers",
+    "name": "Mountain Climbers",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Start in a high plank position with your hands under your shoulders and body in a straight line. Drive one knee toward your chest, then quickly switch legs in a running motion. Keep your hips level and your core tight as you alternate at a steady pace.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/cardio/mountain-climber.gif"
+  },
+  {
+    "id": "decline-sit-up",
+    "name": "Decline Sit-Up",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Intermediate",
+    "instructions": "Secure your feet on a decline bench and lie back with your hands crossed over your chest or behind your head. Curl your torso up by contracting your abs until you are sitting upright. Lower yourself back down slowly, keeping tension on your abs the whole way.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/decline-sit-up.gif"
+  },
+  {
+    "id": "barbell-incline-bench-press",
+    "name": "Barbell Incline Bench Press",
+    "muscleGroup": "Chest",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Lie on an incline bench and lift the bar with a medium grip. Lower it slowly to your upper chest, then push it back up with force.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/barbell-incline-bench-press.gif"
+  },
+  {
+    "id": "dumbbell-decline-bench-press",
+    "name": "Dumbbell Decline Bench Press",
+    "muscleGroup": "Chest",
+    "equipment": "Dumbbell",
+    "difficulty": "Intermediate",
+    "instructions": "Secure legs at the end of decline bench. Lower dumbbells to outer chest, press them up together keeping control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/dumbbell-decline-bench-press.gif"
+  },
+  {
+    "id": "cable-middle-fly",
+    "name": "Cable Middle Fly",
+    "muscleGroup": "Chest",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Hold handles at chest height. Step forward, pull handles together in front with a slight elbow bend.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/cable-middle-fly.gif"
+  },
+  {
+    "id": "archer-push-up",
+    "name": "Archer Push Up",
+    "muscleGroup": "Chest",
+    "equipment": "Bodyweight",
+    "difficulty": "Advanced",
+    "instructions": "Start in high plank. Lower body to one side extending the other arm out. Push back to center and alternate.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/archer-push-up.gif"
+  },
+  {
+    "id": "barbell-decline-pullover",
+    "name": "Barbell Decline Pullover",
+    "muscleGroup": "Chest",
+    "equipment": "Barbell",
+    "difficulty": "Advanced",
+    "instructions": "Lie on decline bench holding barbell over chest. Lower the bar in an arc behind head, then pull it back up using your pecs.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/pectorals/barbell-decline-pullover.gif"
+  },
+  {
+    "id": "assisted-standing-pull-up",
+    "name": "Assisted Standing Pull Up",
+    "muscleGroup": "Back",
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "instructions": "Kneel on the pad of assisted pull-up machine. Grip handles wide and pull body up until chin clears bar. Lower with control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/lats/assisted-standing-pull-up.gif"
+  },
+  {
+    "id": "cable-straight-arm-pulldown-with-rope",
+    "name": "Cable Straight Arm Pulldown With Rope",
+    "muscleGroup": "Back",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Hold rope attachment at high pulley. Keep arms straight and pull hands down to thighs, squeezing lats.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/lats/cable-straight-arm-pulldown-with-rope.gif"
+  },
+  {
+    "id": "dumbbell-incline-row",
+    "name": "Dumbbell Incline Row",
+    "muscleGroup": "Back",
+    "equipment": "Dumbbell",
+    "difficulty": "Intermediate",
+    "instructions": "Lie face down on incline bench holding dumbbells. Pull weights up to sides keeping elbows high, squeeze back.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/upper-back/dumbbell-incline-row.gif"
+  },
+  {
+    "id": "cable-straight-back-seated-row",
+    "name": "Cable Straight Back Seated Row",
+    "muscleGroup": "Back",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Sit at pulley station, pull handle to mid-section keeping back straight and chest tall.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/upper-back/cable-straight-back-seated-row.gif"
+  },
+  {
+    "id": "barbell-bent-arm-pullover",
+    "name": "Barbell Bent Arm Pullover",
+    "muscleGroup": "Back",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Lie on flat bench. Lower barbell behind head with slightly bent elbows, pull back over chest.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/lats/barbell-bent-arm-pullover.gif"
+  },
+  {
+    "id": "barbell-front-raise",
+    "name": "Barbell Front Raise",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "instructions": "Stand holding barbell in front. Raise arms straight up to shoulder height, lower slowly.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/barbell-front-raise.gif"
+  },
+  {
+    "id": "cable-lateral-raise",
+    "name": "Cable Lateral Raise",
+    "muscleGroup": "Shoulders",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Hold single pulley handle, raise arm out to side to shoulder height, control weight back down.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/cable-lateral-raise.gif"
+  },
+  {
+    "id": "band-reverse-fly",
+    "name": "Band Reverse Fly",
+    "muscleGroup": "Shoulders",
+    "equipment": "Band",
+    "difficulty": "Beginner",
+    "instructions": "Hold band in front of chest. Pull arms straight out to sides, stretching the band and squeezing rear delts.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/band-reverse-fly.gif"
+  },
+  {
+    "id": "barbell-seated-overhead-press",
+    "name": "Barbell Seated Overhead Press",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Sit on bench, press barbell straight overhead from shoulders, lower with control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/barbell-seated-overhead-press.gif"
+  },
+  {
+    "id": "barbell-rear-delt-row",
+    "name": "Barbell Rear Delt Row",
+    "muscleGroup": "Shoulders",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Bend forward holding barbell. Pull elbows high and wide to pull bar toward chest, targeting rear delts.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/delts/barbell-rear-delt-row.gif"
+  },
+  {
+    "id": "barbell-front-squat",
+    "name": "Barbell Front Squat",
+    "muscleGroup": "Legs",
+    "equipment": "Barbell",
+    "difficulty": "Advanced",
+    "instructions": "Rest barbell on front of shoulders, clean grip. Squat down keeping torso upright, drive back up.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/glutes/barbell-front-squat.gif"
+  },
+  {
+    "id": "barbell-standing-calf-raise",
+    "name": "Barbell Standing Calf Raise",
+    "muscleGroup": "Legs",
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "instructions": "Stand holding barbell, lift heels off floor as high as possible, lower back slowly.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/calves/barbell-standing-calf-raise.gif"
+  },
+  {
+    "id": "barbell-seated-calf-raise",
+    "name": "Barbell Seated Calf Raise",
+    "muscleGroup": "Legs",
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "instructions": "Sit on bench, rest loaded barbell on thighs. Lift heels by flexing calves, lower slowly.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/calves/barbell-seated-calf-raise.gif"
+  },
+  {
+    "id": "cable-standing-calf-raise",
+    "name": "Cable Standing Calf Raise",
+    "muscleGroup": "Legs",
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "instructions": "Stand on block holding low cable attachment. Flex calves to raise heels, lower under control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/calves/cable-standing-calf-raise.gif"
+  },
+  {
+    "id": "barbell-hack-squat",
+    "name": "Barbell Hack Squat",
+    "muscleGroup": "Legs",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Stand holding barbell behind thighs. Hinge and squat down, driving through heels to stand.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/glutes/barbell-hack-squat.gif"
+  },
+  {
+    "id": "barbell-alternate-biceps-curl",
+    "name": "Barbell Alternate Biceps Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "instructions": "Hold barbell and curl one arm at a time toward shoulders, rotating wrists, lower under control.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/barbell-alternate-biceps-curl.gif"
+  },
+  {
+    "id": "barbell-drag-curl",
+    "name": "Barbell Drag Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Curl barbell by dragging it up your torso, pulling elbows backward, squeeze biceps.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/barbell-drag-curl.gif"
+  },
+  {
+    "id": "barbell-preacher-curl",
+    "name": "Barbell Preacher Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Sit at preacher bench resting arms on pad. Curl barbell from bottom to top, contract biceps.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/barbell-preacher-curl.gif"
+  },
+  {
+    "id": "barbell-close-grip-bench-press",
+    "name": "Barbell Close Grip Bench Press",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "instructions": "Lie on flat bench. Grip barbell with hands closer than shoulder-width, lower to chest, press up.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/triceps/barbell-close-grip-bench-press.gif"
+  },
+  {
+    "id": "barbell-reverse-curl",
+    "name": "Barbell Reverse Curl",
+    "muscleGroup": "Arms",
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "instructions": "Hold barbell with overhand pronated grip. Curl bar to shoulders to target brachioradialis.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/biceps/barbell-reverse-curl.gif"
+  },
+  {
+    "id": "air-bike",
+    "name": "Air Bike",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Lie on back, cycle legs in air while touching opposite elbow to knee.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/air-bike.gif"
+  },
+  {
+    "id": "alternate-heel-touchers",
+    "name": "Alternate Heel Touchers",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Lie on back with knees bent. Reach side-to-side to touch alternate heels, crunching obliques.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/alternate-heel-touchers.gif"
+  },
+  {
+    "id": "assisted-hanging-knee-raise",
+    "name": "Assisted Hanging Knee Raise",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Hang from bar or straps. Lift knees to chest under control, lower slowly to start.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/assisted-hanging-knee-raise.gif"
+  },
+  {
+    "id": "dead-bug",
+    "name": "Dead Bug",
+    "muscleGroup": "Core",
+    "equipment": "Bodyweight",
+    "difficulty": "Beginner",
+    "instructions": "Lie on back, arms up, knees bent at 90. Lower opposite arm and leg to floor, return, repeat.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/dead-bug.gif"
+  },
+  {
+    "id": "band-alternating-v-up",
+    "name": "Band Alternating V Up",
+    "muscleGroup": "Core",
+    "equipment": "Band",
+    "difficulty": "Intermediate",
+    "instructions": "Lie flat holding resistance band. Lift upper body and alternate raising one leg to meet hands.",
+    "gifUrl": "https://cdn.jsdelivr.net/gh/JahelCuadrado/ExerciseGymGifsDB@v1.1.0/abs/band-alternating-v-up.gif"
+  }
+]
