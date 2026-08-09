@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,38 +34,28 @@ class ExerciseDetailScreen extends ConsumerWidget {
               child: SizedBox(
                 height: 220,
                 width: double.infinity,
-                child: Image.network(
-                  exercise.gifUrl,
+                child: CachedNetworkImage(
+                  imageUrl: exercise.gifUrl,
                   fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.broken_image_outlined,
-                              size: 40, color: theme.colorScheme.error),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Preview unavailable',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (context, url, error) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.broken_image_outlined,
+                            size: 40, color: theme.colorScheme.error),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Preview unavailable',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
