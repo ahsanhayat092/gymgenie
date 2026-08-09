@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Bottom-navigation shell hosting the five main tabs.
+/// Bottom-navigation shell hosting exactly five tabs:
+///   Home | Exercises | Plans | Progress | More
 class HomeShell extends StatelessWidget {
   const HomeShell({super.key, required this.navigationShell});
 
@@ -18,17 +19,31 @@ class HomeShell extends StatelessWidget {
           initialLocation: index == navigationShell.currentIndex,
         ),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(
-              icon: Icon(Icons.fitness_center), label: 'Exercises'),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.people_outline), label: 'Community'),
-          NavigationDestination(icon: Icon(Icons.list_alt), label: 'Plans'),
+            icon: Icon(Icons.fitness_center_outlined),
+            selectedIcon: Icon(Icons.fitness_center),
+            label: 'Exercises',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.store_mall_directory_outlined), label: 'Marketplace'),
+            icon: Icon(Icons.list_alt_outlined),
+            selectedIcon: Icon(Icons.list_alt),
+            label: 'Plans',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.show_chart), label: 'Progress'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+            icon: Icon(Icons.show_chart_outlined),
+            selectedIcon: Icon(Icons.show_chart),
+            label: 'Progress',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_outlined),
+            selectedIcon: Icon(Icons.menu),
+            label: 'More',
+          ),
         ],
       ),
     );

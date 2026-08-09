@@ -4,31 +4,32 @@ import 'package:go_router/go_router.dart';
 import 'package:gymgenie/features/auth/application/auth_providers.dart';
 import 'package:gymgenie/features/auth/presentation/login_screen.dart';
 import 'package:gymgenie/features/auth/presentation/signup_screen.dart';
+import 'package:gymgenie/features/challenges/presentation/challenges_screen.dart';
 import 'package:gymgenie/features/exercises/domain/exercise.dart';
 import 'package:gymgenie/features/exercises/presentation/exercise_detail_screen.dart';
 import 'package:gymgenie/features/exercises/presentation/exercise_library_screen.dart';
 import 'package:gymgenie/features/home/presentation/home_shell.dart';
 import 'package:gymgenie/features/home/presentation/home_screen.dart';
+import 'package:gymgenie/features/marketplace/presentation/marketplace_screen.dart';
+import 'package:gymgenie/features/more/presentation/more_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plan_detail_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plan_editor_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plans_screen.dart';
 import 'package:gymgenie/features/generator/presentation/generator_survey_screen.dart';
-import 'package:gymgenie/features/social/presentation/community_hub_screen.dart';
-import 'package:gymgenie/features/marketplace/presentation/marketplace_screen.dart';
 import 'package:gymgenie/features/profile/presentation/edit_profile_screen.dart';
 import 'package:gymgenie/features/profile/presentation/goals_screen.dart';
 import 'package:gymgenie/features/profile/presentation/profile_screen.dart';
 import 'package:gymgenie/features/progress/presentation/progress_screen.dart';
+import 'package:gymgenie/features/social/presentation/community_hub_screen.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 import 'package:gymgenie/features/workout/presentation/active_workout_screen.dart';
 import 'package:gymgenie/features/workout/presentation/workout_history_screen.dart';
 import 'package:gymgenie/features/workout/presentation/workout_summary_screen.dart';
 
 /// Root [GoRouter] with auth-based redirects and a bottom-navigation
-/// [StatefulShellRoute] for the five main tabs.
+/// [StatefulShellRoute] for the five main tabs:
+///   Home | Exercises | Plans | Progress | More
 final routerProvider = Provider<GoRouter>((ref) {
-  // Refresh the router whenever the auth state changes so the redirect
-  // logic re-evaluates (login / logout).
   final refreshNotifier = ValueNotifier<int>(0);
   ref
     ..onDispose(refreshNotifier.dispose)
@@ -41,8 +42,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
-      // While the first auth event has not arrived yet, keep the current
-      // route to avoid bouncing an already signed-in user to /login.
       if (authState.isLoading) return null;
 
       final user = authState.valueOrNull;
@@ -63,11 +62,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SignupScreen(),
       ),
 
-      // Main tab shell (bottom navigation).
+      // ── Bottom navigation shell — exactly 5 tabs ────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             HomeShell(navigationShell: navigationShell),
         branches: [
+          // Tab 0 — Home
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -76,6 +76,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+
+          // Tab 1 — Exercises
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -84,14 +86,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/community',
-                builder: (context, state) => const CommunityHubScreen(),
-              ),
-            ],
-          ),
+
+          // Tab 2 — Plans
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -100,14 +96,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/marketplace',
-                builder: (context, state) => const MarketplaceScreen(),
-              ),
-            ],
-          ),
+
+          // Tab 3 — Progress
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -116,23 +106,29 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+
+          // Tab 4 — More  (hub for Profile, Community, Marketplace, History, Goals)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/profile',
-                builder: (context, state) => const ProfileScreen(),
+                path: '/more',
+                builder: (context, state) => const MoreScreen(),
               ),
             ],
           ),
         ],
       ),
 
-      // Full-screen routes outside the shell.
+      // ── Full-screen routes (push on top of shell) ───────────────────────
+
+      // Exercises
       GoRoute(
         path: '/exercises/detail',
         builder: (context, state) =>
             ExerciseDetailScreen(exercise: state.extra as Exercise),
       ),
+
+      // Plans
       GoRoute(
         path: '/plans/new',
         builder: (context, state) => const PlanEditorScreen(),
@@ -151,6 +147,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             PlanEditorScreen(planId: state.pathParameters['id']!),
       ),
+
+      // Workout
       GoRoute(
         path: '/workout/active',
         builder: (context, state) => const ActiveWorkoutScreen(),
@@ -160,6 +158,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             WorkoutSummaryScreen(log: state.extra as WorkoutLog),
       ),
+
+      // Profile sub-screens (pushed from MoreScreen)
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
       GoRoute(
         path: '/profile/edit',
         builder: (context, state) => const EditProfileScreen(),
@@ -168,9 +172,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/goals',
         builder: (context, state) => const GoalsScreen(),
       ),
+
+      // History (pushed from MoreScreen or profile)
       GoRoute(
         path: '/history',
         builder: (context, state) => const WorkoutHistoryScreen(),
+      ),
+
+      // Community (pushed from MoreScreen)
+      GoRoute(
+        path: '/community',
+        builder: (context, state) => const CommunityHubScreen(),
+      ),
+
+      // Marketplace (pushed from MoreScreen)
+      GoRoute(
+        path: '/marketplace',
+        builder: (context, state) => const MarketplaceScreen(),
+      ),
+
+      // Challenges (pushed from MoreScreen)
+      GoRoute(
+        path: '/challenges',
+        builder: (context, state) => const ChallengesScreen(),
       ),
     ],
   );
