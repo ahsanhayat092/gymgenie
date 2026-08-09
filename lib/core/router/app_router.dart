@@ -61,15 +61,16 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // 2. Logged in + on auth page → go home or onboarding.
       if (user != null && onAuthPage) {
-        final complete = ref.read(onboardingCompleteProvider).valueOrNull;
-        return (complete == true) ? '/home' : '/onboarding';
+        final complete = ref.read(onboardingCompleteProvider);
+        return complete ? '/home' : '/onboarding';
       }
 
       // 3. Logged in but onboarding not done → redirect to onboarding
       //    (only if we're not already there and profile has loaded).
       if (user != null && !onOnboarding) {
-        final profileState = ref.read(onboardingCompleteProvider);
-        if (profileState.hasValue && profileState.value == false) {
+        final complete = ref.read(onboardingCompleteProvider);
+        final profileAsync = ref.read(userProfileProvider);
+        if (profileAsync.hasValue && !complete) {
           return '/onboarding';
         }
       }

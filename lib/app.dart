@@ -3,13 +3,41 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymgenie/core/router/app_router.dart';
 import 'package:gymgenie/core/theme/app_theme.dart';
+import 'package:gymgenie/features/workout/data/log_repository.dart';
 import 'package:gymgenie/l10n/app_localizations.dart';
 
-class GymGenieApp extends ConsumerWidget {
+class GymGenieApp extends ConsumerStatefulWidget {
   const GymGenieApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GymGenieApp> createState() => _GymGenieAppState();
+}
+
+class _GymGenieAppState extends ConsumerState<GymGenieApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Retry any offline logs when the app comes back to the foreground.
+      ref.read(logRepositoryProvider).syncPendingLogs();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'GymGenie',

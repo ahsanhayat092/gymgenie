@@ -3,15 +3,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gymgenie/features/auth/application/auth_providers.dart';
+import 'package:gymgenie/features/workout/data/local_log_store.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 
 /// User-scoped repository for workout logs and body weight entries.
 /// This is the ONLY place Firestore is touched for these collections.
 class LogRepository {
-  LogRepository(this._firestore, this._auth);
+  LogRepository(this._firestore, this._auth, this._localStore);
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final LocalLogStore _localStore;
 
   String get _uid {
     final user = _auth.currentUser;
@@ -47,7 +49,30 @@ class LogRepository {
     }
   }
 
+  /// Retries any logs stored locally because the device was offline.
+  /// Successful logs are marked synced and cleaned up.
+  Future<void> syncPendingLogs() async {
+    if (_auth.currentUser == null) return;
+    final pending = await _localStore.pendingLogs();
+    for (final entry in pending) {
+      try {
+        final firestoreId = await addLog(entry.log);
+        await _localStore.markSynced(entry.localId, firestoreId);
+      } catch (_) {
+        // Still offline or Firestore error; leave it for the next retry.
+      }
+    }
+    await _localStore.deleteSynced();
+  }
+
   Future<void> deleteLog(String id) async {
+    if (id.startsWith('pending_')) {
+      final localId = int.tryParse(id.replaceFirst('pending_', ''));
+      if (localId != null) {
+        await _localStore.deletePendingLog(localId);
+      }
+      return;
+    }
     try {
       await _logs.doc(id).delete();
     } on FirebaseException catch (e) {
@@ -90,13 +115,24 @@ final logRepositoryProvider = Provider<LogRepository>((ref) {
   return LogRepository(
     ref.watch(firestoreProvider),
     ref.watch(firebaseAuthProvider),
+    ref.watch(localLogStoreProvider),
   );
 });
 
+/// Merges Firestore logs with any locally queued offline logs.
 final workoutLogsProvider = StreamProvider<List<WorkoutLog>>((ref) {
   final auth = ref.watch(authStateProvider).valueOrNull;
   if (auth == null) return Stream.value(const <WorkoutLog>[]);
-  return ref.watch(logRepositoryProvider).watchLogs();
+
+  final localStore = ref.watch(localLogStoreProvider);
+  final firestoreLogs = ref.watch(logRepositoryProvider).watchLogs();
+
+  return firestoreLogs.asyncMap((logs) async {
+    final pending = await localStore.pendingLogs();
+    final combined = [...pending.map((e) => e.log), ...logs];
+    combined.sort((a, b) => b.date.compareTo(a.date));
+    return combined;
+  });
 });
 
 final bodyWeightsProvider = StreamProvider<List<BodyWeightEntry>>((ref) {

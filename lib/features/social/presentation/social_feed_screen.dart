@@ -15,7 +15,6 @@ class SocialFeedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(feedProvider);
     final followingAsync = ref.watch(followingProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(

@@ -151,8 +151,43 @@ class _HistoryTile extends ConsumerWidget {
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
-          leading: const Icon(Icons.fitness_center),
-          title: Text(log.planName),
+          leading: Icon(
+            Icons.fitness_center,
+            color: log.id.startsWith('pending_')
+                ? Colors.orange
+                : Theme.of(context).colorScheme.primary,
+          ),
+          title: Row(
+            children: [
+              Expanded(child: Text(log.planName)),
+              if (log.id.startsWith('pending_')) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cloud_off, size: 12, color: Colors.orange),
+                      SizedBox(width: 4),
+                      Text(
+                        'Pending Sync',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
           subtitle: Text(
             '${log.durationMinutes} min • ${log.completedSets} sets',
           ),

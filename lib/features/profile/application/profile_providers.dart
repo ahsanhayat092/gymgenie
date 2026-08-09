@@ -6,7 +6,7 @@ import 'package:gymgenie/features/profile/data/profile_repository.dart';
 ///
 /// Returns `false` when the user is signed out or no profile exists, so the
 /// router can safely redirect to the onboarding flow.
-final onboardingCompleteProvider = StreamProvider<bool>((ref) {
-  final profileStream = ref.watch(userProfileProvider.stream);
-  return profileStream.map((profile) => profile?.onboardingComplete ?? false);
+final onboardingCompleteProvider = Provider<bool>((ref) {
+  final profile = ref.watch(userProfileProvider).valueOrNull;
+  return profile?.onboardingComplete ?? false;
 });

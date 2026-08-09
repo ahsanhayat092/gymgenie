@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gymgenie/features/exercises/domain/exercise.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
 import 'package:gymgenie/features/workout/application/calorie_estimator.dart';
+import 'package:gymgenie/features/workout/data/local_log_store.dart';
 import 'package:gymgenie/features/workout/data/log_repository.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 
@@ -27,10 +29,15 @@ class ActiveWorkoutState {
 }
 
 class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
-  ActiveWorkoutController(this._logRepo, this._calorieEstimator) : super(null);
+  ActiveWorkoutController(
+    this._logRepo,
+    this._calorieEstimator,
+    this._localStore,
+  ) : super(null);
 
   final LogRepository _logRepo;
   final CalorieEstimator _calorieEstimator;
+  final LocalLogStore _localStore;
 
   /// Starts a session from a plan. Each planned exercise gets
   /// `targetSets` empty sets (completed = false) prefilled with the
@@ -187,6 +194,17 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
   /// Builds the [WorkoutLog] (duration = elapsed minutes, minimum 1),
   /// saves it via [LogRepository.addLog], clears the state and returns
   /// the saved log (with its Firestore id).
+  Future<bool> _isOnline() async {
+    try {
+      final result = await InternetAddress.lookup('google.com').timeout(
+        const Duration(seconds: 3),
+      );
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<WorkoutLog> finish({
     String notes = '',
     String? difficultyRating,
@@ -213,9 +231,35 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
     );
 
     final estimatedLog = _calorieEstimator.estimate(log, userWeightKg: userWeightKg);
-    final id = await _logRepo.addLog(estimatedLog);
+
+    final online = await _isOnline();
+    if (online) {
+      try {
+        final id = await _logRepo.addLog(estimatedLog);
+        final saved = WorkoutLog(
+          id: id,
+          planId: estimatedLog.planId,
+          planName: estimatedLog.planName,
+          date: estimatedLog.date,
+          durationMinutes: estimatedLog.durationMinutes,
+          exercises: estimatedLog.exercises,
+          notes: estimatedLog.notes,
+          difficultyRating: estimatedLog.difficultyRating,
+          energyLevel: estimatedLog.energyLevel,
+          painLevel: estimatedLog.painLevel,
+          totalCaloriesBurned: estimatedLog.totalCaloriesBurned,
+        );
+        state = null;
+        return saved;
+      } catch (_) {
+        // Fallback to offline local save if Firestore write fails
+      }
+    }
+
+    // Save locally as pending
+    final localId = await _localStore.insertPendingLog(estimatedLog);
     final saved = WorkoutLog(
-      id: id,
+      id: 'pending_$localId',
       planId: estimatedLog.planId,
       planName: estimatedLog.planName,
       date: estimatedLog.date,
@@ -315,5 +359,6 @@ final activeWorkoutProvider =
   (ref) => ActiveWorkoutController(
     ref.watch(logRepositoryProvider),
     ref.watch(calorieEstimatorProvider),
+    ref.watch(localLogStoreProvider),
   ),
 );
