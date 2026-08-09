@@ -84,14 +84,31 @@ class _SharePlanDialogContentState
     }
 
     if (_error != null) {
+      final isPermissionError = _error!.toLowerCase().contains('permission');
       return AlertDialog(
         title: const Text('Could not share'),
-        content: Text(_error!),
+        content: Text(
+          isPermissionError
+              ? 'Sharing is currently blocked by Firestore security rules. '
+                  'Please deploy the latest firestore.rules from the project root.'
+              : _error!,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
           ),
+          if (isPermissionError)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _error = null;
+                  _isLoading = true;
+                });
+                _generateCode();
+              },
+              child: const Text('Retry'),
+            ),
         ],
       );
     }
