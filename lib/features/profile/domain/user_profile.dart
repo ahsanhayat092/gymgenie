@@ -13,6 +13,9 @@ class UserProfile {
     this.restTimerEnabled = false,
     this.restTimerDuration = 90,
     this.onboardingComplete = false,
+    this.workoutReminderEnabled = false,
+    this.workoutReminderHour = 8,
+    this.workoutReminderMinute = 0,
     // ── Generator / survey fields ──────────────────────────────────────────
     this.age = 0,
     this.gender = '',
@@ -36,6 +39,11 @@ class UserProfile {
 
   /// True once the user has completed the first-run onboarding survey.
   final bool onboardingComplete;
+
+  // ── Workout Reminder settings
+  final bool workoutReminderEnabled;
+  final int workoutReminderHour;
+  final int workoutReminderMinute;
 
   // ── Generator / survey fields ────────────────────────────────────────────
   final int age;                        // 0 = unset
@@ -61,6 +69,9 @@ class UserProfile {
       restTimerEnabled: (map['restTimerEnabled'] as bool?) ?? false,
       restTimerDuration: (map['restTimerDuration'] as num?)?.toInt() ?? 90,
       onboardingComplete: (map['onboardingComplete'] as bool?) ?? false,
+      workoutReminderEnabled: (map['workoutReminderEnabled'] as bool?) ?? false,
+      workoutReminderHour: (map['workoutReminderHour'] as num?)?.toInt() ?? 8,
+      workoutReminderMinute: (map['workoutReminderMinute'] as num?)?.toInt() ?? 0,
       age: (map['age'] as num?)?.toInt() ?? 0,
       gender: (map['gender'] as String?) ?? '',
       experience: (map['experience'] as String?) ?? '',
@@ -83,6 +94,9 @@ class UserProfile {
       'restTimerEnabled': restTimerEnabled,
       'restTimerDuration': restTimerDuration,
       'onboardingComplete': onboardingComplete,
+      'workoutReminderEnabled': workoutReminderEnabled,
+      'workoutReminderHour': workoutReminderHour,
+      'workoutReminderMinute': workoutReminderMinute,
       // ── Generator / survey fields ────────────────────────────────────────────
       if (age > 0) 'age': age,
       if (gender.isNotEmpty) 'gender': gender,
@@ -106,6 +120,9 @@ class UserProfile {
     bool? restTimerEnabled,
     int? restTimerDuration,
     bool? onboardingComplete,
+    bool? workoutReminderEnabled,
+    int? workoutReminderHour,
+    int? workoutReminderMinute,
     int? age,
     String? gender,
     String? experience,
@@ -126,6 +143,9 @@ class UserProfile {
       restTimerEnabled: restTimerEnabled ?? this.restTimerEnabled,
       restTimerDuration: restTimerDuration ?? this.restTimerDuration,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
+      workoutReminderEnabled: workoutReminderEnabled ?? this.workoutReminderEnabled,
+      workoutReminderHour: workoutReminderHour ?? this.workoutReminderHour,
+      workoutReminderMinute: workoutReminderMinute ?? this.workoutReminderMinute,
       age: age ?? this.age,
       gender: gender ?? this.gender,
       experience: experience ?? this.experience,

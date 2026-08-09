@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:gymgenie/core/services/notification_service.dart';
 import 'package:gymgenie/features/exercises/domain/exercise.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
 import 'package:gymgenie/features/workout/application/calorie_estimator.dart';
@@ -33,11 +34,13 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
     this._logRepo,
     this._calorieEstimator,
     this._localStore,
+    this._notifications,
   ) : super(null);
 
   final LogRepository _logRepo;
   final CalorieEstimator _calorieEstimator;
   final LocalLogStore _localStore;
+  final NotificationService _notifications;
 
   /// Starts a session from a plan. Each planned exercise gets
   /// `targetSets` empty sets (completed = false) prefilled with the
@@ -232,6 +235,10 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
 
     final estimatedLog = _calorieEstimator.estimate(log, userWeightKg: userWeightKg);
 
+    // Schedule inactivity reminder 3 days from now, and cancel rest timer alert.
+    await _notifications.cancelRestTimerNotification();
+    await _notifications.scheduleInactivityReminder();
+
     final online = await _isOnline();
     if (online) {
       try {
@@ -360,5 +367,6 @@ final activeWorkoutProvider =
     ref.watch(logRepositoryProvider),
     ref.watch(calorieEstimatorProvider),
     ref.watch(localLogStoreProvider),
+    ref.watch(notificationServiceProvider),
   ),
 );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:gymgenie/core/services/notification_service.dart';
 import 'package:gymgenie/core/widgets/error_view.dart';
 import 'package:gymgenie/core/widgets/loading_view.dart';
 import 'package:gymgenie/features/auth/application/auth_providers.dart';
@@ -202,6 +203,60 @@ class ProfileScreen extends ConsumerWidget {
                               }
                             },
                           ),
+                        ),
+                      ],
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        secondary: const Icon(Icons.notifications_active_outlined),
+                        title: const Text('Workout Reminders'),
+                        subtitle: const Text('Get a daily reminder to stay on track'),
+                        value: profile.workoutReminderEnabled,
+                        onChanged: (val) async {
+                          final updated = profile.copyWith(workoutReminderEnabled: val);
+                          await ref.read(profileRepositoryProvider).saveProfile(updated);
+                          
+                          if (val) {
+                            await ref.read(notificationServiceProvider).scheduleWorkoutReminder(
+                              hour: profile.workoutReminderHour,
+                              minute: profile.workoutReminderMinute,
+                            );
+                          } else {
+                            await ref.read(notificationServiceProvider).cancelWorkoutReminder();
+                          }
+                        },
+                      ),
+                      if (profile.workoutReminderEnabled) ...[
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.access_time_outlined),
+                          title: const Text('Reminder Time'),
+                          trailing: Text(
+                            '${profile.workoutReminderHour.toString().padLeft(2, '0')}:${profile.workoutReminderMinute.toString().padLeft(2, '0')}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay(
+                                hour: profile.workoutReminderHour,
+                                minute: profile.workoutReminderMinute,
+                              ),
+                            );
+                            if (picked != null) {
+                              final updated = profile.copyWith(
+                                workoutReminderHour: picked.hour,
+                                workoutReminderMinute: picked.minute,
+                              );
+                              await ref.read(profileRepositoryProvider).saveProfile(updated);
+                              await ref.read(notificationServiceProvider).scheduleWorkoutReminder(
+                                hour: picked.hour,
+                                minute: picked.minute,
+                              );
+                            }
+                          },
                         ),
                       ],
                     ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gymgenie/core/services/notification_service.dart';
 
 class RestTimerState {
   const RestTimerState({
@@ -27,12 +28,14 @@ class RestTimerState {
 }
 
 class RestTimerController extends StateNotifier<RestTimerState> {
-  RestTimerController()
+  RestTimerController(this._ref)
       : super(const RestTimerState(
           isActive: false,
           remainingSeconds: 0,
           totalSeconds: 0,
         ));
+
+  final Ref _ref;
 
   Timer? _timer;
 
@@ -43,6 +46,8 @@ class RestTimerController extends StateNotifier<RestTimerState> {
       remainingSeconds: seconds,
       totalSeconds: seconds,
     );
+
+    _ref.read(notificationServiceProvider).scheduleRestTimerNotification(seconds);
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.remainingSeconds <= 1) {
@@ -63,10 +68,12 @@ class RestTimerController extends StateNotifier<RestTimerState> {
       remainingSeconds: newRemaining,
       totalSeconds: newTotal,
     );
+    _ref.read(notificationServiceProvider).scheduleRestTimerNotification(newRemaining);
   }
 
   void skip() {
     _timer?.cancel();
+    _ref.read(notificationServiceProvider).cancelRestTimerNotification();
     state = const RestTimerState(
       isActive: false,
       remainingSeconds: 0,
@@ -76,6 +83,7 @@ class RestTimerController extends StateNotifier<RestTimerState> {
 
   void _onFinished() {
     _timer?.cancel();
+    _ref.read(notificationServiceProvider).cancelRestTimerNotification();
     state = const RestTimerState(
       isActive: false,
       remainingSeconds: 0,
@@ -88,11 +96,12 @@ class RestTimerController extends StateNotifier<RestTimerState> {
   @override
   void dispose() {
     _timer?.cancel();
+    _ref.read(notificationServiceProvider).cancelRestTimerNotification();
     super.dispose();
   }
 }
 
 final restTimerProvider =
     StateNotifierProvider<RestTimerController, RestTimerState>((ref) {
-  return RestTimerController();
+  return RestTimerController(ref);
 });

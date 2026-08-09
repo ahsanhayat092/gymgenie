@@ -18,6 +18,7 @@ import 'package:gymgenie/features/plans/presentation/plan_editor_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plans_screen.dart';
 import 'package:gymgenie/features/generator/presentation/generator_survey_screen.dart';
 import 'package:gymgenie/features/profile/application/profile_providers.dart';
+import 'package:gymgenie/features/profile/data/profile_repository.dart';
 import 'package:gymgenie/features/profile/presentation/edit_profile_screen.dart';
 import 'package:gymgenie/features/profile/presentation/goals_screen.dart';
 import 'package:gymgenie/features/profile/presentation/profile_screen.dart';

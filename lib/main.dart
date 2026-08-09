@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymgenie/app.dart';
 import 'package:gymgenie/firebase_options.dart';
+import 'package:gymgenie/core/services/notification_service.dart';
 import 'package:gymgenie/features/workout/data/local_log_store.dart';
 import 'package:gymgenie/features/workout/data/log_repository.dart';
 
@@ -20,6 +21,11 @@ void main() async {
     FirebaseAuth.instance,
     LocalLogStore(),
   ).syncPendingLogs();
+
+  // Initialize and request push notification permissions.
+  final notificationService = NotificationService();
+  await notificationService.init();
+  await notificationService.requestPermissions();
 
   runApp(const ProviderScope(child: GymGenieApp()));
 }
