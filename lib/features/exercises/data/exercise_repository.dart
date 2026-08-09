@@ -31,6 +31,15 @@ class ExerciseRepository {
     _cache = exercises;
     return exercises;
   }
+
+  /// Looks up a single exercise from the bundled library by its slug [id].
+  Future<Exercise?> getExerciseById(String id) async {
+    final exercises = await loadExercises();
+    for (final exercise in exercises) {
+      if (exercise.id == id) return exercise;
+    }
+    return null;
+  }
 }
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
@@ -39,4 +48,8 @@ final exerciseRepositoryProvider = Provider<ExerciseRepository>(
 
 final exerciseLibraryProvider = FutureProvider<List<Exercise>>(
   (ref) => ref.watch(exerciseRepositoryProvider).loadExercises(),
+);
+
+final exerciseByIdProvider = FutureProvider.family<Exercise?, String>(
+  (ref, id) => ref.watch(exerciseRepositoryProvider).getExerciseById(id),
 );

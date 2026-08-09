@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gymgenie/features/exercises/domain/exercise.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
+import 'package:gymgenie/features/workout/application/calorie_estimator.dart';
 import 'package:gymgenie/features/workout/data/log_repository.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 
@@ -26,9 +27,10 @@ class ActiveWorkoutState {
 }
 
 class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
-  ActiveWorkoutController(this._logRepo) : super(null);
+  ActiveWorkoutController(this._logRepo, this._calorieEstimator) : super(null);
 
   final LogRepository _logRepo;
+  final CalorieEstimator _calorieEstimator;
 
   /// Starts a session from a plan. Each planned exercise gets
   /// `targetSets` empty sets (completed = false) prefilled with the
@@ -190,6 +192,7 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
     String? difficultyRating,
     int? energyLevel,
     String? painLevel,
+    double userWeightKg = 70.0,
   }) async {
     final current = state;
     if (current == null) {
@@ -208,18 +211,21 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
       energyLevel: energyLevel,
       painLevel: painLevel,
     );
-    final id = await _logRepo.addLog(log);
+
+    final estimatedLog = _calorieEstimator.estimate(log, userWeightKg: userWeightKg);
+    final id = await _logRepo.addLog(estimatedLog);
     final saved = WorkoutLog(
       id: id,
-      planId: log.planId,
-      planName: log.planName,
-      date: log.date,
-      durationMinutes: log.durationMinutes,
-      exercises: log.exercises,
-      notes: log.notes,
-      difficultyRating: log.difficultyRating,
-      energyLevel: log.energyLevel,
-      painLevel: log.painLevel,
+      planId: estimatedLog.planId,
+      planName: estimatedLog.planName,
+      date: estimatedLog.date,
+      durationMinutes: estimatedLog.durationMinutes,
+      exercises: estimatedLog.exercises,
+      notes: estimatedLog.notes,
+      difficultyRating: estimatedLog.difficultyRating,
+      energyLevel: estimatedLog.energyLevel,
+      painLevel: estimatedLog.painLevel,
+      totalCaloriesBurned: estimatedLog.totalCaloriesBurned,
     );
     state = null;
     return saved;
@@ -306,4 +312,8 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
 
 final activeWorkoutProvider =
     StateNotifierProvider<ActiveWorkoutController, ActiveWorkoutState?>(
-        (ref) => ActiveWorkoutController(ref.watch(logRepositoryProvider)));
+  (ref) => ActiveWorkoutController(
+    ref.watch(logRepositoryProvider),
+    ref.watch(calorieEstimatorProvider),
+  ),
+);

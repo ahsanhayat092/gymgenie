@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:gymgenie/core/utils/formatters.dart';
 import 'package:gymgenie/core/widgets/error_view.dart';
 import 'package:gymgenie/core/widgets/loading_view.dart';
+import 'package:gymgenie/features/progress/application/calorie_stats_providers.dart';
 import 'package:gymgenie/features/workout/data/log_repository.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 
@@ -184,6 +185,11 @@ class ProgressScreen extends ConsumerWidget {
               final weeklyVolumes = _weeklyVolumes(logList, 8);
               final records = _personalRecords(logList);
 
+              final todayCalories = ref.watch(dailyCaloriesProvider(DateTime.now()));
+              final monthCalories = ref.watch(monthlyCaloriesProvider(DateTime.now()));
+              final overallCalories = ref.watch(overallCaloriesProvider);
+              final recentCalories = ref.watch(recentDailyCaloriesProvider(7));
+
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 child: Column(
@@ -205,6 +211,38 @@ class ProgressScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         _StatTile(label: 'Sets', value: '$weekSets'),
                       ],
+                    ),
+                    const SizedBox(height: 24),
+                    Text('Calories burned',
+                        style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _StatTile(
+                          label: 'Today',
+                          value: '$todayCalories kcal',
+                        ),
+                        const SizedBox(width: 12),
+                        _StatTile(
+                          label: 'This Month',
+                          value: '$monthCalories kcal',
+                        ),
+                        const SizedBox(width: 12),
+                        _StatTile(
+                          label: 'All Time',
+                          value: '$overallCalories kcal',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 24, 16, 8),
+                        child: SizedBox(
+                          height: 180,
+                          child: _DailyCaloriesChart(days: recentCalories),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Text('Weekly volume (last 8 weeks)',
@@ -503,6 +541,71 @@ class _BodyWeightChart extends StatelessWidget {
               color: theme.colorScheme.secondary.withOpacity(0.12),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DailyCaloriesChart extends StatelessWidget {
+  const _DailyCaloriesChart({required this.days});
+
+  final List<DailyCalories> days;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final maxCalories = days.fold<int>(0, (m, d) => d.calories > m ? d.calories : m);
+
+    return BarChart(
+      BarChartData(
+        maxY: maxCalories == 0 ? 1 : maxCalories * 1.15,
+        barTouchData: BarTouchData(enabled: false),
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        titlesData: FlTitlesData(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 28,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                final index = value.toInt();
+                if (index < 0 || index >= days.length) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    DateFormat('d MMM').format(days[index].date),
+                    style: theme.textTheme.labelSmall,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        barGroups: [
+          for (var i = 0; i < days.length; i++)
+            BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: days[i].calories.toDouble(),
+                  color: theme.colorScheme.secondary,
+                  width: 14,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(4),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

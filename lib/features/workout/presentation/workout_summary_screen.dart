@@ -54,6 +54,12 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   label: 'Volume',
                   value: formatVolume(log.totalVolume),
                 ),
+                const SizedBox(width: 12),
+                _StatCard(
+                  icon: Icons.local_fire_department,
+                  label: 'Calories',
+                  value: '${log.totalCalories} kcal',
+                ),
               ],
             ),
             const SizedBox(height: 32),
@@ -66,7 +72,8 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   title: Text(exercise.exerciseName),
                   subtitle: Text(
                     '${exercise.sets.where((s) => s.completed).length} of '
-                    '${exercise.sets.length} sets completed',
+                    '${exercise.sets.length} sets completed'
+                    '${exercise.exerciseCalories > 0 ? ' • ${exercise.exerciseCalories.round()} kcal' : ''}',
                   ),
                   trailing: Text(formatVolume(exercise.volume)),
                 ),

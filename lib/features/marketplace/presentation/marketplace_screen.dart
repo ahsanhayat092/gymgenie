@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymgenie/core/widgets/empty_view.dart';
-import 'package:gymgenie/core/widgets/error_view.dart';
 import 'package:gymgenie/core/widgets/loading_view.dart';
 import 'package:gymgenie/features/plans/data/plan_repository.dart';
 
@@ -59,9 +58,10 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
           Expanded(
             child: sharedPlansAsync.when(
               loading: () => const LoadingView(),
-              error: (err, _) => ErrorView(
-                message: 'Failed to load plans from the marketplace.',
-                onRetry: () => ref.invalidate(sharedPlansProvider),
+              error: (err, _) => EmptyView(
+                icon: Icons.store_mall_directory_outlined,
+                title: 'Marketplace is empty',
+                subtitle: 'No shared plans yet. Share your first plan from your library to inspire others.',
               ),
               data: (plansList) {
                 final filtered = plansList.where((plan) {
@@ -73,8 +73,8 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                 if (filtered.isEmpty) {
                   return const EmptyView(
                     icon: Icons.store_mall_directory_outlined,
-                    title: 'No plans found',
-                    subtitle: 'Try adjusting your search criteria or check back later.',
+                    title: 'Marketplace is empty',
+                    subtitle: 'No shared plans yet. Share your first plan from your library to inspire others.',
                   );
                 }
 

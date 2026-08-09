@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymgenie/core/utils/formatters.dart';
 import 'package:gymgenie/core/widgets/empty_view.dart';
-import 'package:gymgenie/core/widgets/error_view.dart';
 import 'package:gymgenie/core/widgets/loading_view.dart';
 import 'package:gymgenie/features/auth/application/auth_providers.dart';
 import 'package:gymgenie/features/profile/data/profile_repository.dart';
@@ -36,9 +35,20 @@ class SocialFeedScreen extends ConsumerWidget {
       ),
       body: feedAsync.when(
         loading: () => const LoadingView(),
-        error: (err, _) => ErrorView(
-          message: 'Failed to load community feed.',
-          onRetry: () => ref.invalidate(feedProvider),
+        error: (err, _) => EmptyView(
+          icon: Icons.people_outline,
+          title: 'Community feed is quiet',
+          subtitle: 'No posts yet. Finish a workout to share your progress and follow friends to see theirs!',
+          action: FilledButton.icon(
+            onPressed: () {
+              showDialog<void>(
+                context: context,
+                builder: (context) => const FriendsSearchDialog(),
+              );
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('Find Friends'),
+          ),
         ),
         data: (feedItems) {
           final followingUids = followingAsync.valueOrNull ?? const [];

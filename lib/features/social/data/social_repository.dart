@@ -169,5 +169,7 @@ final feedProvider = StreamProvider<List<SocialFeedItem>>((ref) {
 });
 
 final allProfilesProvider = StreamProvider<List<UserProfile>>((ref) {
+  final auth = ref.watch(authStateProvider).valueOrNull;
+  if (auth == null) return Stream.value(const <UserProfile>[]);
   return ref.watch(socialRepositoryProvider).watchAllProfiles();
 });

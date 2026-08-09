@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:gymgenie/core/widgets/error_view.dart';
 import 'package:gymgenie/core/widgets/loading_view.dart';
+import 'package:gymgenie/features/exercises/data/exercise_repository.dart';
 import 'package:gymgenie/features/plans/data/plan_repository.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
+import 'package:gymgenie/features/plans/presentation/share_plan_dialog.dart';
 import 'package:gymgenie/features/workout/application/active_workout_controller.dart';
 import 'package:gymgenie/features/workout/data/log_repository.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
@@ -31,109 +31,6 @@ class PlanDetailScreen extends ConsumerWidget {
     final base = '${exercise.targetSets} × ${exercise.targetReps}';
     if (exercise.targetWeight <= 0) return base;
     return '$base @ ${_formatWeight(exercise.targetWeight)} kg';
-  }
-
-  Future<void> _sharePlan(BuildContext context, WidgetRef ref, WorkoutPlan plan) async {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Generating share link...'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    try {
-      final code = await ref.read(planRepositoryProvider).sharePlan(plan);
-      if (!context.mounted) return;
-      Navigator.of(context).pop(); // dismiss loading dialog
-
-      final shareUrl = 'https://gymgenie.app/share?code=$code';
-
-      showDialog<void>(
-        context: context,
-        builder: (dialogContext) {
-          final theme = Theme.of(context);
-          return AlertDialog(
-            title: const Text('Share Workout Plan'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Let other GymGenie users scan this QR code or use the share code below to import your plan.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-                      ),
-                    ),
-                    child: QrImageView(
-                      data: shareUrl,
-                      version: QrVersions.auto,
-                      size: 180,
-                      gapless: false,
-                      foregroundColor: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text('Share Code:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    code,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: shareUrl));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Copied link to clipboard!')),
-                      );
-                    },
-                    icon: const Icon(Icons.copy),
-                    label: const Text('Copy Share Link'),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Close'),
-              ),
-            ],
-          );
-        },
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.of(context).pop(); // dismiss loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to share plan: $e')),
-      );
-    }
   }
 
   Future<void> _confirmAndDelete(
@@ -181,7 +78,11 @@ class PlanDetailScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'Share',
               icon: const Icon(Icons.share_outlined),
-              onPressed: () => _sharePlan(context, ref, planAsync.valueOrNull!),
+              onPressed: () => showSharePlanDialog(
+                context,
+                ref,
+                planAsync.valueOrNull!,
+              ),
             ),
             IconButton(
               tooltip: 'Edit',
@@ -235,6 +136,22 @@ class PlanDetailScreen extends ConsumerWidget {
                     leading: CircleAvatar(child: Text('${i + 1}')),
                     title: Text(exercises[i].exerciseName),
                     subtitle: Text(_exerciseSummary(exercises[i])),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      final exercise = await ref.read(
+                        exerciseByIdProvider(exercises[i].exerciseId).future,
+                      );
+                      if (!context.mounted) return;
+                      if (exercise == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Exercise details not available.'),
+                          ),
+                        );
+                        return;
+                      }
+                      context.push('/exercises/detail', extra: exercise);
+                    },
                   ),
                 ),
               const SizedBox(height: 16),
@@ -255,6 +172,12 @@ class PlanDetailScreen extends ConsumerWidget {
                 },
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Start Workout'),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.tonalIcon(
+                onPressed: () => showSharePlanDialog(context, ref, plan),
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('Share Plan'),
               ),
               const SizedBox(height: 8),
               FilledButton.tonalIcon(

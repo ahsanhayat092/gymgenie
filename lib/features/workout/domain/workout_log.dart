@@ -78,6 +78,32 @@ class ExerciseLog {
       .where((s) => s.completed)
       .fold(0.0, (sum, s) => sum + s.reps * s.weight);
 
+  double get exerciseCalories => caloriesBurned ?? 0;
+
+  ExerciseLog copyWith({
+    String? exerciseId,
+    String? exerciseName,
+    List<SetLog>? sets,
+    double? durationMinutes,
+    double? distanceKm,
+    double? speedKmh,
+    double? inclinePct,
+    double? resistanceLevel,
+    double? caloriesBurned,
+  }) {
+    return ExerciseLog(
+      exerciseId: exerciseId ?? this.exerciseId,
+      exerciseName: exerciseName ?? this.exerciseName,
+      sets: sets ?? this.sets,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      distanceKm: distanceKm ?? this.distanceKm,
+      speedKmh: speedKmh ?? this.speedKmh,
+      inclinePct: inclinePct ?? this.inclinePct,
+      resistanceLevel: resistanceLevel ?? this.resistanceLevel,
+      caloriesBurned: caloriesBurned ?? this.caloriesBurned,
+    );
+  }
+
   factory ExerciseLog.fromMap(Map<String, dynamic> map) {
     final rawSets = (map['sets'] as List<dynamic>?) ?? const <dynamic>[];
     return ExerciseLog(
@@ -123,6 +149,7 @@ class WorkoutLog {
     this.difficultyRating,
     this.energyLevel,
     this.painLevel,
+    this.totalCaloriesBurned,
   });
 
   final String id;
@@ -136,7 +163,14 @@ class WorkoutLog {
   final int? energyLevel;
   final String? painLevel;
 
+  /// Cached total calories burned for the whole session.
+  final int? totalCaloriesBurned;
+
   double get totalVolume => exercises.fold(0.0, (s, e) => s + e.volume);
+
+  int get totalCalories =>
+      totalCaloriesBurned ??
+      exercises.fold<int>(0, (sum, e) => sum + e.exerciseCalories.round());
 
   int get completedSets => exercises.fold(
       0, (s, e) => s + e.sets.where((st) => st.completed).length);
@@ -158,6 +192,7 @@ class WorkoutLog {
       difficultyRating: map['difficultyRating'] as String?,
       energyLevel: (map['energyLevel'] as num?)?.toInt(),
       painLevel: map['painLevel'] as String?,
+      totalCaloriesBurned: (map['totalCaloriesBurned'] as num?)?.toInt(),
     );
   }
 
@@ -172,6 +207,7 @@ class WorkoutLog {
       if (difficultyRating != null) 'difficultyRating': difficultyRating,
       if (energyLevel != null) 'energyLevel': energyLevel,
       if (painLevel != null) 'painLevel': painLevel,
+      if (totalCaloriesBurned != null) 'totalCaloriesBurned': totalCaloriesBurned,
     };
   }
 }

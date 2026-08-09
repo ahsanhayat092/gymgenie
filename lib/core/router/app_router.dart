@@ -12,10 +12,12 @@ import 'package:gymgenie/features/home/presentation/home_shell.dart';
 import 'package:gymgenie/features/home/presentation/home_screen.dart';
 import 'package:gymgenie/features/marketplace/presentation/marketplace_screen.dart';
 import 'package:gymgenie/features/more/presentation/more_screen.dart';
+import 'package:gymgenie/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plan_detail_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plan_editor_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plans_screen.dart';
 import 'package:gymgenie/features/generator/presentation/generator_survey_screen.dart';
+import 'package:gymgenie/features/profile/application/profile_providers.dart';
 import 'package:gymgenie/features/profile/presentation/edit_profile_screen.dart';
 import 'package:gymgenie/features/profile/presentation/goals_screen.dart';
 import 'package:gymgenie/features/profile/presentation/profile_screen.dart';
@@ -35,6 +37,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     ..onDispose(refreshNotifier.dispose)
     ..listen(authStateProvider, (previous, next) {
       refreshNotifier.value++;
+    })
+    // Also refresh when profile loads so the onboarding redirect fires
+    // as soon as we know whether onboardingComplete is true or false.
+    ..listen(onboardingCompleteProvider, (previous, next) {
+      refreshNotifier.value++;
     });
 
   return GoRouter(
@@ -47,9 +54,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       final user = authState.valueOrNull;
       final location = state.matchedLocation;
       final onAuthPage = location == '/login' || location == '/signup';
+      final onOnboarding = location == '/onboarding';
 
+      // 1. Not logged in → send to login (unless already on auth pages).
       if (user == null && !onAuthPage) return '/login';
-      if (user != null && onAuthPage) return '/home';
+
+      // 2. Logged in + on auth page → go home or onboarding.
+      if (user != null && onAuthPage) {
+        final complete = ref.read(onboardingCompleteProvider).valueOrNull;
+        return (complete == true) ? '/home' : '/onboarding';
+      }
+
+      // 3. Logged in but onboarding not done → redirect to onboarding
+      //    (only if we're not already there and profile has loaded).
+      if (user != null && !onOnboarding) {
+        final profileState = ref.read(onboardingCompleteProvider);
+        if (profileState.hasValue && profileState.value == false) {
+          return '/onboarding';
+        }
+      }
+
       return null;
     },
     routes: [
@@ -60,6 +84,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/signup',
         builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
 
       // ── Bottom navigation shell — exactly 5 tabs ────────────────────────

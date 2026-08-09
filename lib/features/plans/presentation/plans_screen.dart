@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:gymgenie/core/widgets/empty_view.dart';
 import 'package:gymgenie/core/widgets/error_view.dart';
 import 'package:gymgenie/core/widgets/loading_view.dart';
+import 'package:gymgenie/features/generator/application/workout_generator.dart';
 import 'package:gymgenie/features/plans/data/plan_repository.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
+import 'package:gymgenie/features/plans/presentation/share_plan_dialog.dart';
 
 // ── Accent colour matching the design spec ──────────────────────────────────
 const _kAccent = Color(0xFFf5a623);
@@ -128,6 +130,37 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
     }
   }
 
+  Future<void> _onGenerateAIPressed() async {
+    final plans = ref.read(plansProvider).valueOrNull ?? const <WorkoutPlan>[];
+    final generator = ref.read(workoutGeneratorProvider);
+    final canGenerate = await generator.isLatestWeekFinished(plans);
+
+    if (!mounted) return;
+    if (!canGenerate) {
+      final unattempted = await generator.unattemptedDaysInLatestWeek(plans);
+      final days = unattempted.map((n) => '• $n').join('\n');
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Finish your current week first'),
+          content: Text(
+            'Finish your current week before generating the next one.\n\n'
+            'These days still need a workout:\n$days',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (mounted) context.push('/plans/generate');
+  }
+
   Future<void> _showImportDialog() async {
     final controller = TextEditingController();
     var importing = false;
@@ -204,7 +237,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
           IconButton(
             tooltip: 'Generate AI Plan',
             icon: const Icon(Icons.auto_awesome),
-            onPressed: () => context.push('/plans/generate'),
+            onPressed: _onGenerateAIPressed,
           ),
           IconButton(
             tooltip: 'Import Shared Plan',
@@ -230,7 +263,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   FilledButton.icon(
-                    onPressed: () => context.push('/plans/generate'),
+                    onPressed: _onGenerateAIPressed,
                     icon: const Icon(Icons.auto_awesome),
                     label: const Text('Generate AI Plan'),
                   ),
@@ -268,6 +301,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                     }),
                     onDayTap: (plan) => context.push('/plans/${plan.id}'),
                     onDayDelete: _confirmAndDelete,
+                    ref: ref,
                     nextPlanId: firstPlan?.id,
                   );
                 },
@@ -309,6 +343,7 @@ class _WeekCard extends StatelessWidget {
     required this.onToggle,
     required this.onDayTap,
     required this.onDayDelete,
+    required this.ref,
     this.nextPlanId,
   });
 
@@ -317,6 +352,7 @@ class _WeekCard extends StatelessWidget {
   final VoidCallback onToggle;
   final void Function(WorkoutPlan) onDayTap;
   final void Function(WorkoutPlan) onDayDelete;
+  final WidgetRef ref;
   final String? nextPlanId;
 
   @override
@@ -413,6 +449,7 @@ class _WeekCard extends StatelessWidget {
                             isNext: isNext,
                             onTap: () => onDayTap(plan),
                             onDelete: () => onDayDelete(plan),
+                            onShare: () => showSharePlanDialog(context, ref, plan),
                           ),
                           if (!isLast)
                             const Divider(color: _kDivider, height: 1, indent: 60),
@@ -493,6 +530,7 @@ class _DayRow extends StatefulWidget {
     required this.isNext,
     required this.onTap,
     required this.onDelete,
+    required this.onShare,
   });
 
   final WorkoutPlan plan;
@@ -502,6 +540,7 @@ class _DayRow extends StatefulWidget {
   final bool isNext;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback onShare;
 
   @override
   State<_DayRow> createState() => _DayRowState();
@@ -633,6 +672,13 @@ class _DayRowState extends State<_DayRow> with SingleTickerProviderStateMixin {
                   ],
                 ),
                 const SizedBox(width: 8),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.share_outlined,
+                      color: _kSecondary, size: 20),
+                  onPressed: widget.onShare,
+                ),
+                const SizedBox(width: 4),
                 const Icon(Icons.chevron_right, color: _kSecondary, size: 20),
               ],
             ),

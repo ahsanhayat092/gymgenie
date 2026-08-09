@@ -4,6 +4,7 @@ import 'package:gymgenie/features/exercises/data/exercise_repository.dart';
 import 'package:gymgenie/features/exercises/domain/exercise.dart';
 import 'package:gymgenie/features/plans/data/plan_repository.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
+import 'package:gymgenie/features/workout/data/log_repository.dart';
 
 class SurveyData {
   SurveyData({
@@ -34,10 +35,11 @@ class SurveyData {
 }
 
 class WorkoutGenerator {
-  WorkoutGenerator(this._planRepo, this._exerciseRepo);
+  WorkoutGenerator(this._planRepo, this._exerciseRepo, this._logRepo);
 
   final PlanRepository _planRepo;
   final ExerciseRepository _exerciseRepo;
+  final LogRepository _logRepo;
 
   static const Map<String, String> _cardioNames = {
     'Treadmill': 'Treadmill Cardio',
@@ -47,8 +49,87 @@ class WorkoutGenerator {
     'Stair climber': 'Stair Climber Cardio',
   };
 
+  /// Monday-aligned start of the week containing [date].
+  DateTime _weekStart(DateTime date) {
+    final day = DateTime(date.year, date.month, date.day);
+    return day.subtract(Duration(days: day.weekday - 1));
+  }
+
+  /// Returns the Monday on which the next AI program should start.
+  ///
+  /// - First program ever → current week's Monday (Week 1).
+  /// - Subsequent programs → Monday after the latest existing week.
+  DateTime _nextProgramStartDate(List<WorkoutPlan> existingPlans) {
+    if (existingPlans.isEmpty) return _weekStart(DateTime.now());
+
+    final sorted = [...existingPlans]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final latestWeekStart = _weekStart(sorted.first.createdAt);
+    return latestWeekStart.add(const Duration(days: 7));
+  }
+
+  /// True when the latest existing week is finished.
+  ///
+  /// A week is finished if:
+  /// - it is in the past (its Monday is before the current Monday), or
+  /// - every plan in that week has at least one logged workout.
+  ///
+  /// Partial progress counts: a single log for a plan means the user
+  /// attempted that day.
+  Future<bool> isLatestWeekFinished(List<WorkoutPlan> existingPlans) async {
+    if (existingPlans.isEmpty) return true;
+
+    final sorted = [...existingPlans]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final latestWeekStart = _weekStart(sorted.first.createdAt);
+    final currentWeekStart = _weekStart(DateTime.now());
+
+    if (latestWeekStart.isBefore(currentWeekStart)) return true;
+
+    final logs = await _logRepo.watchLogs().first;
+    final attemptedPlanIds = logs.map((l) => l.planId).toSet();
+
+    final latestWeekPlans = existingPlans.where(
+      (p) => _weekStart(p.createdAt) == latestWeekStart,
+    );
+    return latestWeekPlans.every((p) => attemptedPlanIds.contains(p.id));
+  }
+
+  /// Human-readable list of day names in the latest week that have not been
+  /// attempted yet.
+  Future<List<String>> unattemptedDaysInLatestWeek(
+    List<WorkoutPlan> existingPlans,
+  ) async {
+    if (existingPlans.isEmpty) return const <String>[];
+
+    final sorted = [...existingPlans]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final latestWeekStart = _weekStart(sorted.first.createdAt);
+    final logs = await _logRepo.watchLogs().first;
+    final attemptedPlanIds = logs.map((l) => l.planId).toSet();
+
+    return existingPlans
+        .where((p) => _weekStart(p.createdAt) == latestWeekStart)
+        .where((p) => !attemptedPlanIds.contains(p.id))
+        .map((p) => p.name)
+        .toList();
+  }
+
   /// Generates a set of plans based on survey data and saves them to Firestore.
   Future<void> generateAndSaveProgram(SurveyData survey) async {
+    // Load existing plans and enforce the "finish current week" rule.
+    final existingPlans = await _planRepo.watchPlans().first;
+    final canGenerate = await isLatestWeekFinished(existingPlans);
+    if (!canGenerate) {
+      final unattempted = await unattemptedDaysInLatestWeek(existingPlans);
+      final days = unattempted.map((n) => '• $n').join('\n');
+      throw StateError(
+        'Finish your current week before generating the next one.\n\n'
+        'These days still need a workout:\n$days',
+      );
+    }
+
+    final programStart = _nextProgramStartDate(existingPlans);
     final exercises = await _exerciseRepo.loadExercises();
 
     // 1. Filter exercises by equipment selection.
@@ -155,8 +236,8 @@ class WorkoutGenerator {
         name: '${survey.goal} - Day ${d + 1} ($dayName)',
         description: 'AI Generated plan for ${survey.experience} level based on a ${survey.daysPerWeek}-day split.',
         exercises: plannedExercises,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: programStart,
+        updatedAt: programStart,
       );
 
       await _planRepo.createPlan(plan);
@@ -273,5 +354,6 @@ final workoutGeneratorProvider = Provider<WorkoutGenerator>((ref) {
   return WorkoutGenerator(
     ref.watch(planRepositoryProvider),
     ref.watch(exerciseRepositoryProvider),
+    ref.watch(logRepositoryProvider),
   );
 });

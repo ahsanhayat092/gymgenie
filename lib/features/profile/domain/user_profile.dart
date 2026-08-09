@@ -12,6 +12,7 @@ class UserProfile {
     required this.createdAt,
     this.restTimerEnabled = false,
     this.restTimerDuration = 90,
+    this.onboardingComplete = false,
     // ── Generator / survey fields ──────────────────────────────────────────
     this.age = 0,
     this.gender = '',
@@ -32,6 +33,9 @@ class UserProfile {
   final DateTime createdAt;
   final bool restTimerEnabled;
   final int restTimerDuration; // in seconds
+
+  /// True once the user has completed the first-run onboarding survey.
+  final bool onboardingComplete;
 
   // ── Generator / survey fields ────────────────────────────────────────────
   final int age;                        // 0 = unset
@@ -56,6 +60,7 @@ class UserProfile {
           : DateTime.fromMillisecondsSinceEpoch(0),
       restTimerEnabled: (map['restTimerEnabled'] as bool?) ?? false,
       restTimerDuration: (map['restTimerDuration'] as num?)?.toInt() ?? 90,
+      onboardingComplete: (map['onboardingComplete'] as bool?) ?? false,
       age: (map['age'] as num?)?.toInt() ?? 0,
       gender: (map['gender'] as String?) ?? '',
       experience: (map['experience'] as String?) ?? '',
@@ -77,6 +82,7 @@ class UserProfile {
       'createdAt': Timestamp.fromDate(createdAt),
       'restTimerEnabled': restTimerEnabled,
       'restTimerDuration': restTimerDuration,
+      'onboardingComplete': onboardingComplete,
       // ── Generator / survey fields ────────────────────────────────────────────
       if (age > 0) 'age': age,
       if (gender.isNotEmpty) 'gender': gender,
@@ -99,6 +105,7 @@ class UserProfile {
     DateTime? createdAt,
     bool? restTimerEnabled,
     int? restTimerDuration,
+    bool? onboardingComplete,
     int? age,
     String? gender,
     String? experience,
@@ -118,6 +125,7 @@ class UserProfile {
       createdAt: createdAt ?? this.createdAt,
       restTimerEnabled: restTimerEnabled ?? this.restTimerEnabled,
       restTimerDuration: restTimerDuration ?? this.restTimerDuration,
+      onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       age: age ?? this.age,
       gender: gender ?? this.gender,
       experience: experience ?? this.experience,

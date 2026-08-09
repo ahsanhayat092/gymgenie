@@ -160,17 +160,29 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
     setState(() => _finishing = true);
     try {
+      final profile = ref.read(userProfileProvider).valueOrNull;
+      final userWeightKg = profile != null && profile.weightKg > 0
+          ? profile.weightKg
+          : 70.0;
+
       final savedLog = await ref.read(activeWorkoutProvider.notifier).finish(
             notes: result['notes'] as String,
             difficultyRating: result['difficulty'] as String,
             energyLevel: result['energy'] as int,
             painLevel: result['pain'] as String,
+            userWeightKg: userWeightKg,
           );
       if (!mounted) return;
       
-      // Post workout log to Strava-style community feed
-      final profile = ref.read(userProfileProvider).valueOrNull;
-      await ref.read(socialRepositoryProvider).postToFeed(savedLog, profile);
+      // Post workout log to Strava-style community feed.
+      // This is best-effort: the workout is already saved, so we still
+      // navigate to the summary even if the feed write fails.
+      try {
+        await ref.read(socialRepositoryProvider).postToFeed(savedLog, profile);
+      } catch (e) {
+        // Silently ignore feed errors so the user isn't blocked after finishing.
+        debugPrint('Failed to post workout to social feed: $e');
+      }
 
       if (!mounted) return;
       context.pushReplacement('/workout/summary', extra: savedLog);

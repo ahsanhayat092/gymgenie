@@ -160,6 +160,21 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
         const SnackBar(content: Text('Weekly program generated successfully!')),
       );
       context.go('/plans');
+    } on StateError catch (e) {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Finish your current week first'),
+          content: Text(e.message),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to generate program: $e')),

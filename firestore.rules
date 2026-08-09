@@ -1,11 +1,45 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // User profiles: owners have full control; any signed-in user can read
+    // profiles for the friends/community search features.
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-      match /{sub=**} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+
+      // Private user subcollections (plans, logs, bodyWeights, following, etc.)
+      match /{subcollection}/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == uid;
       }
+    }
+
+    // Shared plan templates for the marketplace and import-by-code feature.
+    match /shared_plans/{planId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+
+    // Public social feed posts.
+    match /social_feed/{postId} {
+      allow read: if request.auth != null;
+
+      // Users can only create posts where they are the author.
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+
+      // Users can update a post only to give/remove kudos or add a comment.
+      allow update: if request.auth != null
+        && (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kudosUids'])
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
+        );
+
+      // Authors can delete their own posts.
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
     }
   }
 }
