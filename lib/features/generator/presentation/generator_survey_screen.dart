@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gymgenie/features/generator/application/workout_generator.dart';
+import 'package:gymgenie/features/profile/data/profile_repository.dart';
 
 class GeneratorSurveyScreen extends ConsumerStatefulWidget {
   const GeneratorSurveyScreen({super.key});
@@ -15,38 +16,48 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
   int _currentStep = 0;
   bool _isGenerating = false;
 
-  // Survey state values
-  final _ageController = TextEditingController(text: '25');
-  final _heightController = TextEditingController(text: '175');
-  final _weightController = TextEditingController(text: '70');
+  // ── Step 1: About Me ──────────────────────────────────────────────────────
+  late final TextEditingController _ageController;
+  late final TextEditingController _heightController;
+  late final TextEditingController _weightController;
   String _gender = 'Male';
   String _experience = 'Beginner';
 
+  // ── Step 2: Goal ──────────────────────────────────────────────────────────
   String _goal = 'Build Muscle';
 
+  // ── Step 3: Availability ──────────────────────────────────────────────────
   int _daysPerWeek = 3;
   int _durationMinutes = 45;
 
+  // ── Step 4: Intensity ─────────────────────────────────────────────────────
   String _level = 'Moderate';
 
+  // ── Step 5: Equipment ─────────────────────────────────────────────────────
   final List<String> _equipmentOptions = [
-    'Barbell',
-    'Dumbbell',
-    'Cable',
-    'Machine',
-    'Kettlebell',
-    'Bodyweight',
+    'Barbell', 'Dumbbell', 'Cable', 'Machine', 'Kettlebell', 'Bodyweight',
   ];
-  late List<String> _selectedEquipment = ['Barbell', 'Dumbbell', 'Bodyweight'];
+  late List<String> _selectedEquipment;
 
+  // ── Step 6: Cardio ────────────────────────────────────────────────────────
   final List<String> _cardioOptions = [
-    'Treadmill',
-    'Bike',
-    'Elliptical',
-    'Rowing',
-    'Stair climber',
+    'Treadmill', 'Bike', 'Elliptical', 'Rowing', 'Stair climber',
   ];
-  List<String> _selectedCardio = ['Treadmill', 'Bike'];
+  late List<String> _selectedCardio;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialise with fallback defaults; _prefillFromProfile overwrites these.
+    _ageController = TextEditingController(text: '25');
+    _heightController = TextEditingController(text: '175');
+    _weightController = TextEditingController(text: '70');
+    _selectedEquipment = ['Barbell', 'Dumbbell', 'Bodyweight'];
+    _selectedCardio = ['Treadmill', 'Bike'];
+
+    // Defer profile read until after first build so ref is available.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prefillFromProfile());
+  }
 
   @override
   void dispose() {
@@ -57,7 +68,54 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
     super.dispose();
   }
 
+  // ── Pre-fill from profile ─────────────────────────────────────────────────
+
+  void _prefillFromProfile() {
+    final profile = ref.read(userProfileProvider).valueOrNull;
+    if (profile == null || !mounted) return;
+
+    setState(() {
+      if (profile.age > 0) _ageController.text = profile.age.toString();
+      if (profile.heightCm > 0) _heightController.text = profile.heightCm.round().toString();
+      if (profile.weightKg > 0) _weightController.text = profile.weightKg.round().toString();
+      if (profile.gender.isNotEmpty) _gender = profile.gender;
+      if (profile.experience.isNotEmpty) _experience = profile.experience;
+      if (profile.fitnessGoal.isNotEmpty) _goal = profile.fitnessGoal;
+      _daysPerWeek = profile.weeklyWorkoutGoal.clamp(2, 6);
+      if (profile.sessionDurationMinutes > 0) _durationMinutes = profile.sessionDurationMinutes;
+      if (profile.intensityLevel.isNotEmpty) _level = profile.intensityLevel;
+      if (profile.equipment.isNotEmpty) _selectedEquipment = List.of(profile.equipment);
+      if (profile.cardioEquipment.isNotEmpty) _selectedCardio = List.of(profile.cardioEquipment);
+    });
+  }
+
+  // ── Write back to profile whenever a field changes ────────────────────────
+
+  void _syncProfile() {
+    final profile = ref.read(userProfileProvider).valueOrNull;
+    if (profile == null) return;
+
+    final updated = profile.copyWith(
+      age: int.tryParse(_ageController.text) ?? profile.age,
+      heightCm: double.tryParse(_heightController.text) ?? profile.heightCm,
+      weightKg: double.tryParse(_weightController.text) ?? profile.weightKg,
+      gender: _gender,
+      experience: _experience,
+      fitnessGoal: _goal,
+      weeklyWorkoutGoal: _daysPerWeek,
+      sessionDurationMinutes: _durationMinutes,
+      intensityLevel: _level,
+      equipment: List.of(_selectedEquipment),
+      cardioEquipment: List.of(_selectedCardio),
+    );
+
+    ref.read(profileRepositoryProvider).saveProfile(updated);
+  }
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+
   void _nextPage() {
+    _syncProfile(); // persist before advancing
     if (_currentStep < 5) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -75,7 +133,10 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
     }
   }
 
+  // ── Generate ──────────────────────────────────────────────────────────────
+
   Future<void> _generatePlan() async {
+    _syncProfile(); // final sync before generation
     setState(() => _isGenerating = true);
     try {
       final survey = SurveyData(
@@ -94,7 +155,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
 
       await ref.read(workoutGeneratorProvider).generateAndSaveProgram(survey);
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Weekly program generated successfully!')),
       );
@@ -107,6 +168,8 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
       if (mounted) setState(() => _isGenerating = false);
     }
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +215,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
       ),
       body: Column(
         children: [
-          // Progress Bar Indicator
+          // Progress bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Column(
@@ -177,7 +240,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
             child: PageView(
               controller: _pageController,
               onPageChanged: (idx) => setState(() => _currentStep = idx),
-              physics: const NeverScrollableScrollPhysics(), // Force using buttons for clean flow
+              physics: const NeverScrollableScrollPhysics(),
               children: [
                 _buildAboutMeStep(theme),
                 _buildGoalStep(theme),
@@ -188,7 +251,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
               ],
             ),
           ),
-          // Navigation Bottom Bar
+          // Bottom navigation
           Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
@@ -213,6 +276,8 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
     );
   }
 
+  // ── Step widgets ──────────────────────────────────────────────────────────
+
   Widget _buildAboutMeStep(ThemeData theme) {
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -221,8 +286,20 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
           'Tell us about yourself',
           style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 8),
-        const Text('This helps GymGenie scale weight recommendations and baseline metrics.'),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            const Icon(Icons.sync, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              'Pre-filled from your profile — changes here will sync back.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
         Row(
           children: [
@@ -231,6 +308,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
                 controller: _ageController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Age'),
+                onChanged: (_) => _syncProfile(),
               ),
             ),
             const SizedBox(width: 16),
@@ -243,7 +321,10 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
                   DropdownMenuItem(value: 'Female', child: Text('Female')),
                   DropdownMenuItem(value: 'Other', child: Text('Other')),
                 ],
-                onChanged: (val) => setState(() => _gender = val ?? 'Male'),
+                onChanged: (val) {
+                  setState(() => _gender = val ?? 'Male');
+                  _syncProfile();
+                },
               ),
             ),
           ],
@@ -256,6 +337,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
                 controller: _heightController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Height (cm)'),
+                onChanged: (_) => _syncProfile(),
               ),
             ),
             const SizedBox(width: 16),
@@ -264,6 +346,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
                 controller: _weightController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Weight (kg)'),
+                onChanged: (_) => _syncProfile(),
               ),
             ),
           ],
@@ -276,7 +359,10 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
             title: Text(exp),
             value: exp,
             groupValue: _experience,
-            onChanged: (val) => setState(() => _experience = val ?? 'Beginner'),
+            onChanged: (val) {
+              setState(() => _experience = val ?? 'Beginner');
+              _syncProfile();
+            },
           ),
       ],
     );
@@ -325,9 +411,15 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
               trailing: Radio<String>(
                 value: g['title'] as String,
                 groupValue: _goal,
-                onChanged: (val) => setState(() => _goal = val ?? 'Build Muscle'),
+                onChanged: (val) {
+                  setState(() => _goal = val ?? 'Build Muscle');
+                  _syncProfile();
+                },
               ),
-              onTap: () => setState(() => _goal = g['title'] as String),
+              onTap: () {
+                setState(() => _goal = g['title'] as String);
+                _syncProfile();
+              },
             ),
           ),
           const SizedBox(height: 8),
@@ -353,7 +445,10 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
           max: 6,
           divisions: 4,
           label: '$_daysPerWeek days',
-          onChanged: (val) => setState(() => _daysPerWeek = val.round()),
+          onChanged: (val) {
+            setState(() => _daysPerWeek = val.round());
+            _syncProfile();
+          },
         ),
         Center(
           child: Text(
@@ -374,7 +469,10 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
                   label: Text('$dur min'),
                   selected: isSel,
                   onSelected: (selected) {
-                    if (selected) setState(() => _durationMinutes = dur);
+                    if (selected) {
+                      setState(() => _durationMinutes = dur);
+                      _syncProfile();
+                    }
                   },
                 ),
               ),
@@ -422,9 +520,15 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
               trailing: Radio<String>(
                 value: intensity['title'] as String,
                 groupValue: _level,
-                onChanged: (val) => setState(() => _level = val ?? 'Moderate'),
+                onChanged: (val) {
+                  setState(() => _level = val ?? 'Moderate');
+                  _syncProfile();
+                },
               ),
-              onTap: () => setState(() => _level = intensity['title'] as String),
+              onTap: () {
+                setState(() => _level = intensity['title'] as String);
+                _syncProfile();
+              },
             ),
           ),
           const SizedBox(height: 8),
@@ -456,12 +560,11 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
                 setState(() {
                   if (selected) {
                     _selectedEquipment.add(eq);
-                  } else {
-                    if (eq != 'Bodyweight') {
-                      _selectedEquipment.remove(eq);
-                    }
+                  } else if (eq != 'Bodyweight') {
+                    _selectedEquipment.remove(eq);
                   }
                 });
+                _syncProfile();
               },
             );
           }).toList(),
@@ -497,6 +600,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
                     _selectedCardio.remove(cardio);
                   }
                 });
+                _syncProfile();
               },
             );
           }).toList(),
