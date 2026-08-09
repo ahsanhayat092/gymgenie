@@ -131,6 +131,13 @@ class PlanRepository {
       throw Exception(e.message ?? 'Failed to import plan');
     }
   }
+
+  /// Watch all globally shared plans in the `/shared_plans` collection.
+  Stream<List<Map<String, dynamic>>> watchSharedPlans() {
+    return _firestore.collection('shared_plans').snapshots().map(
+          (snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList(),
+        );
+  }
 }
 
 final planRepositoryProvider = Provider<PlanRepository>(
@@ -145,4 +152,11 @@ final plansProvider = StreamProvider<List<WorkoutPlan>>((ref) {
   final auth = ref.watch(authStateProvider).valueOrNull;
   if (auth == null) return Stream.value(const <WorkoutPlan>[]);
   return ref.watch(planRepositoryProvider).watchPlans();
+});
+
+/// All shared plan templates for the marketplace.
+final sharedPlansProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final auth = ref.watch(authStateProvider).valueOrNull;
+  if (auth == null) return Stream.value(const <Map<String, dynamic>>[]);
+  return ref.watch(planRepositoryProvider).watchSharedPlans();
 });

@@ -13,6 +13,7 @@ import 'package:gymgenie/features/profile/data/profile_repository.dart';
 import 'package:gymgenie/features/workout/application/active_workout_controller.dart';
 import 'package:gymgenie/features/workout/application/rest_timer_controller.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
+import 'package:gymgenie/features/social/data/social_repository.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key});
@@ -165,6 +166,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             energyLevel: result['energy'] as int,
             painLevel: result['pain'] as String,
           );
+      if (!mounted) return;
+      
+      // Post workout log to Strava-style community feed
+      final profile = ref.read(userProfileProvider).valueOrNull;
+      await ref.read(socialRepositoryProvider).postToFeed(savedLog, profile);
+
       if (!mounted) return;
       context.pushReplacement('/workout/summary', extra: savedLog);
     } catch (e) {

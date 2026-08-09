@@ -13,6 +13,8 @@ import 'package:gymgenie/features/plans/presentation/plan_detail_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plan_editor_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plans_screen.dart';
 import 'package:gymgenie/features/generator/presentation/generator_survey_screen.dart';
+import 'package:gymgenie/features/social/presentation/community_hub_screen.dart';
+import 'package:gymgenie/features/marketplace/presentation/marketplace_screen.dart';
 import 'package:gymgenie/features/profile/presentation/edit_profile_screen.dart';
 import 'package:gymgenie/features/profile/presentation/goals_screen.dart';
 import 'package:gymgenie/features/profile/presentation/profile_screen.dart';
@@ -85,8 +87,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: '/community',
+                builder: (context, state) => const CommunityHubScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: '/plans',
                 builder: (context, state) => const PlansScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/marketplace',
+                builder: (context, state) => const MarketplaceScreen(),
               ),
             ],
           ),

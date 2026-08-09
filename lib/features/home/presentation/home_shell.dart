@@ -21,7 +21,11 @@ class HomeShell extends StatelessWidget {
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(
               icon: Icon(Icons.fitness_center), label: 'Exercises'),
+          NavigationDestination(
+              icon: Icon(Icons.people_outline), label: 'Community'),
           NavigationDestination(icon: Icon(Icons.list_alt), label: 'Plans'),
+          NavigationDestination(
+              icon: Icon(Icons.store_mall_directory_outlined), label: 'Marketplace'),
           NavigationDestination(
               icon: Icon(Icons.show_chart), label: 'Progress'),
           NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
