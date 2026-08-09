@@ -12,6 +12,7 @@ import 'package:gymgenie/features/home/presentation/home_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plan_detail_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plan_editor_screen.dart';
 import 'package:gymgenie/features/plans/presentation/plans_screen.dart';
+import 'package:gymgenie/features/generator/presentation/generator_survey_screen.dart';
 import 'package:gymgenie/features/profile/presentation/edit_profile_screen.dart';
 import 'package:gymgenie/features/profile/presentation/goals_screen.dart';
 import 'package:gymgenie/features/profile/presentation/profile_screen.dart';
@@ -117,6 +118,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/plans/new',
         builder: (context, state) => const PlanEditorScreen(),
+      ),
+      GoRoute(
+        path: '/plans/generate',
+        builder: (context, state) => const GeneratorSurveyScreen(),
       ),
       GoRoute(
         path: '/plans/:id',

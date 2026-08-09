@@ -126,6 +126,11 @@ class PlansScreen extends ConsumerWidget {
         title: const Text('Workout Plans'),
         actions: [
           IconButton(
+            tooltip: 'Generate AI Plan',
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: () => context.push('/plans/generate'),
+          ),
+          IconButton(
             tooltip: 'Import Shared Plan',
             icon: const Icon(Icons.download_outlined),
             onPressed: () => _showImportDialog(context, ref),
@@ -149,11 +154,22 @@ class PlansScreen extends ConsumerWidget {
               icon: Icons.list_alt,
               title: 'No plans yet',
               subtitle:
-                  'Create your first workout plan to get started.',
-              action: FilledButton.icon(
-                onPressed: () => context.push('/plans/new'),
-                icon: const Icon(Icons.add),
-                label: const Text('Create Plan'),
+                  'Create a custom plan or let GymGenie generate a personalised week for you.',
+              action: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => context.push('/plans/generate'),
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Generate AI Plan'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/plans/new'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create Custom Plan'),
+                  ),
+                ],
               ),
             );
           }
