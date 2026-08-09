@@ -35,6 +35,18 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
   /// plan's target reps/weight.
   void startFromPlan(WorkoutPlan plan, {WorkoutLog? lastLog}) {
     final exercises = plan.exercises.map((pe) {
+      // ── Cardio exercises: no sets — pre-seed duration & resistance ──────────
+      if (pe.isCardio) {
+        return ExerciseLog(
+          exerciseId: pe.exerciseId,
+          exerciseName: pe.exerciseName,
+          sets: const [],
+          durationMinutes: (pe.targetDurationMinutes ?? 20).toDouble(),
+          resistanceLevel: pe.targetResistanceLevel ?? 5.0,
+        );
+      }
+
+      // ── Strength exercises: build sets with adaptive progression ────────────
       var targetSets = pe.targetSets;
       var targetReps = pe.targetReps;
       var targetWeight = pe.targetWeight;
@@ -44,10 +56,8 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
         final pain = lastLog.painLevel?.toLowerCase();
 
         if (diff == 'very easy' || diff == 'easy') {
-          // Progressively increase target weight if it was too easy
           targetWeight += 2.5;
         } else if (diff == 'very hard' || pain == 'moderate' || pain == 'severe') {
-          // Decrease volume by ~15% if too hard or in pain
           targetSets = (targetSets * 0.85).round().clamp(2, 6);
           targetReps = (targetReps * 0.85).round().clamp(1, 30);
         }

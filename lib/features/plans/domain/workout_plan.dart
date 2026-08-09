@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// An exercise slot inside a [WorkoutPlan], with target set/rep/weight goals.
+/// An exercise slot inside a [WorkoutPlan], with target set/rep/weight goals
+/// for strength exercises, or duration/resistance for cardio exercises.
 class PlannedExercise {
   const PlannedExercise({
     required this.exerciseId,
@@ -9,22 +10,34 @@ class PlannedExercise {
     required this.targetReps,
     required this.targetWeight,
     required this.order,
+    this.isCardio = false,
+    this.targetDurationMinutes,
+    this.targetResistanceLevel,
   });
 
   final String exerciseId;
   final String exerciseName;
 
-  /// >= 1.
+  /// >= 1.  Ignored when [isCardio] is true.
   final int targetSets;
 
-  /// >= 1.
+  /// >= 1.  Ignored when [isCardio] is true.
   final int targetReps;
 
-  /// kg, 0.0 = bodyweight/unspecified.
+  /// kg, 0.0 = bodyweight/unspecified.  Ignored when [isCardio] is true.
   final double targetWeight;
 
   /// 0-based position in the plan.
   final int order;
+
+  /// True for cardio machines (treadmill, elliptical, bike, etc.).
+  final bool isCardio;
+
+  /// Target duration in minutes for cardio exercises.
+  final int? targetDurationMinutes;
+
+  /// Resistance/incline level (1-20 scale) for cardio machines.
+  final double? targetResistanceLevel;
 
   PlannedExercise copyWith({
     String? exerciseId,
@@ -33,6 +46,9 @@ class PlannedExercise {
     int? targetReps,
     double? targetWeight,
     int? order,
+    bool? isCardio,
+    int? targetDurationMinutes,
+    double? targetResistanceLevel,
   }) {
     return PlannedExercise(
       exerciseId: exerciseId ?? this.exerciseId,
@@ -41,6 +57,9 @@ class PlannedExercise {
       targetReps: targetReps ?? this.targetReps,
       targetWeight: targetWeight ?? this.targetWeight,
       order: order ?? this.order,
+      isCardio: isCardio ?? this.isCardio,
+      targetDurationMinutes: targetDurationMinutes ?? this.targetDurationMinutes,
+      targetResistanceLevel: targetResistanceLevel ?? this.targetResistanceLevel,
     );
   }
 
@@ -52,6 +71,9 @@ class PlannedExercise {
       targetReps: (map['targetReps'] as num?)?.toInt() ?? 1,
       targetWeight: (map['targetWeight'] as num?)?.toDouble() ?? 0.0,
       order: (map['order'] as num?)?.toInt() ?? 0,
+      isCardio: (map['isCardio'] as bool?) ?? false,
+      targetDurationMinutes: (map['targetDurationMinutes'] as num?)?.toInt(),
+      targetResistanceLevel: (map['targetResistanceLevel'] as num?)?.toDouble(),
     );
   }
 
@@ -63,6 +85,9 @@ class PlannedExercise {
       'targetReps': targetReps,
       'targetWeight': targetWeight,
       'order': order,
+      'isCardio': isCardio,
+      if (targetDurationMinutes != null) 'targetDurationMinutes': targetDurationMinutes,
+      if (targetResistanceLevel != null) 'targetResistanceLevel': targetResistanceLevel,
     };
   }
 }

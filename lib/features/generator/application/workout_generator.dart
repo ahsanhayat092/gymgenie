@@ -132,15 +132,20 @@ class WorkoutGenerator {
       if (needsCardio && survey.cardioAvailable.isNotEmpty) {
         final chosenCardio = survey.cardioAvailable[random.nextInt(survey.cardioAvailable.length)];
         final cardioName = _cardioNames[chosenCardio] ?? 'General Cardio';
-        
-        // Target Sets = 1, Target Reps = 1 (representing a single cardio block duration)
+        final cardioDuration = _determineCardioDuration(survey.goal, survey.durationMinutes);
+        final cardioResistance = _determineCardioResistance(survey.level);
+
         plannedExercises.add(PlannedExercise(
           exerciseId: chosenCardio.toLowerCase().replaceAll(' ', '-'),
           exerciseName: cardioName,
+          // Strength fields are irrelevant — cardio uses isCardio fields below
           targetSets: 1,
-          targetReps: _determineCardioDuration(survey.goal, survey.durationMinutes),
-          targetWeight: 0.0, // weight is 0 for cardio
+          targetReps: 1,
+          targetWeight: 0.0,
           order: orderIdx++,
+          isCardio: true,
+          targetDurationMinutes: cardioDuration,
+          targetResistanceLevel: cardioResistance,
         ));
       }
 
@@ -250,6 +255,17 @@ class WorkoutGenerator {
       pct = 0.50; // 50% time is cardio
     }
     return (totalMinutes * pct).round();
+  }
+
+  double _determineCardioResistance(String level) {
+    switch (level.toLowerCase()) {
+      case 'easy':
+        return 3.0;
+      case 'hard':
+        return 8.0;
+      default:
+        return 5.0; // Moderate
+    }
   }
 }
 

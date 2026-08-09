@@ -359,7 +359,8 @@ class _ExerciseCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final notifier = ref.read(activeWorkoutProvider.notifier);
-    final isCardio = exercise.exerciseName.toLowerCase().contains('cardio');
+    // Cardio exercises are seeded without sets — use that as the reliable signal.
+    final isCardio = exercise.sets.isEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
