@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gymgenie/features/exercises/domain/exercise.dart';
+import 'package:gymgenie/features/exercises/presentation/exercise_progression_chart.dart';
 import 'package:gymgenie/features/workout/application/active_workout_controller.dart';
 
 /// Detail view for a single [Exercise], passed via go_router `extra`.
@@ -84,7 +85,9 @@ class ExerciseDetailScreen extends ConsumerWidget {
           Text('Instructions', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Text(exercise.instructions, style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          ExerciseProgressionChart(exercise: exercise),
+          const SizedBox(height: 24),
           if (activeWorkout != null)
             FilledButton.icon(
               onPressed: () {
