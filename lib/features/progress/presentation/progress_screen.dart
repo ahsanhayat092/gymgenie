@@ -7,6 +7,7 @@ import 'package:gymgenie/core/utils/formatters.dart';
 import 'package:gymgenie/core/widgets/error_view.dart';
 import 'package:gymgenie/core/widgets/loading_view.dart';
 import 'package:gymgenie/features/progress/application/calorie_stats_providers.dart';
+import 'package:gymgenie/features/progress/presentation/muscle_group_balance_chart.dart';
 import 'package:gymgenie/features/workout/data/log_repository.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 
@@ -257,6 +258,8 @@ class ProgressScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    const MuscleGroupBalanceChart(),
                     const SizedBox(height: 24),
                     Row(
                       children: [
