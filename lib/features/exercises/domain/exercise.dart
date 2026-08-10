@@ -44,4 +44,16 @@ class Exercise {
       gifUrl: json['gifUrl'] as String? ?? '',
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'muscleGroup': muscleGroup,
+      'equipment': equipment,
+      'difficulty': difficulty,
+      'instructions': instructions,
+      'gifUrl': gifUrl,
+    };
+  }
 }

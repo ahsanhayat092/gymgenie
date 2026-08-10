@@ -2,6 +2,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper function to check if the requesting user has admin rights.
+    function isAdmin() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
     // User profiles: owners have full control; any signed-in user can read
     // profiles for the friends/community search features.
     match /users/{uid} {
@@ -20,6 +27,12 @@ service cloud.firestore {
     match /shared_plans/{planId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
+    }
+
+    // Global Exercise library: read-only for users, read/write for administrators.
+    match /exercises/{exerciseId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // Public social feed posts.
