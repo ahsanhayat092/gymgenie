@@ -15,6 +15,7 @@ import 'package:gymgenie/features/workout/application/active_workout_controller.
 import 'package:gymgenie/features/workout/application/rest_timer_controller.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
+import 'package:gymgenie/features/plans/data/plan_repository.dart';
 import 'package:gymgenie/features/social/data/social_repository.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
@@ -84,6 +85,54 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       final userWeightKg = profile != null && profile.weightKg > 0
           ? profile.weightKg
           : 70.0;
+
+      final activeWorkout = ref.read(activeWorkoutProvider);
+      final updateOriginal = result['updateOriginalPlan'] as bool? ?? false;
+
+      if (updateOriginal && activeWorkout != null && activeWorkout.planId.isNotEmpty) {
+        try {
+          final planRepo = ref.read(planRepositoryProvider);
+          final originalPlan = await planRepo.getPlan(activeWorkout.planId);
+          if (originalPlan != null) {
+            final List<PlannedExercise> updatedPlannedExercises = [];
+            for (var i = 0; i < activeWorkout.exercises.length; i++) {
+              final exLog = activeWorkout.exercises[i];
+              final isCardio = exLog.sets.isEmpty;
+
+              PlannedExercise? originalMatch;
+              for (final pe in originalPlan.exercises) {
+                if (pe.exerciseId == exLog.exerciseId) {
+                  originalMatch = pe;
+                  break;
+                }
+              }
+
+              if (originalMatch != null) {
+                updatedPlannedExercises.add(originalMatch.copyWith(order: i));
+              } else {
+                updatedPlannedExercises.add(PlannedExercise(
+                  exerciseId: exLog.exerciseId,
+                  exerciseName: exLog.exerciseName,
+                  targetSets: isCardio ? 1 : (exLog.sets.isNotEmpty ? exLog.sets.length : 3),
+                  targetReps: isCardio ? 1 : (exLog.sets.isNotEmpty ? exLog.sets[0].reps : 10),
+                  targetWeight: isCardio ? 0.0 : (exLog.sets.isNotEmpty ? exLog.sets[0].weight : 0.0),
+                  order: i,
+                  isCardio: isCardio,
+                  targetDurationMinutes: isCardio ? (exLog.durationMinutes?.round() ?? 20) : null,
+                  targetResistanceLevel: isCardio ? (exLog.resistanceLevel ?? 5.0) : null,
+                  cardioSegments: isCardio ? exLog.cardioSegments : null,
+                ));
+              }
+            }
+
+            await planRepo.updatePlan(originalPlan.copyWith(
+              exercises: updatedPlannedExercises,
+            ));
+          }
+        } catch (e) {
+          debugPrint('Failed to update original plan template: $e');
+        }
+      }
 
       final savedLog = await ref.read(activeWorkoutProvider.notifier).finish(
             notes: result['notes'] as String,
@@ -1489,18 +1538,19 @@ class _SelectableReasonTile extends StatelessWidget {
   }
 }
 
-class _FinishWorkoutSheet extends StatefulWidget {
+class _FinishWorkoutSheet extends ConsumerStatefulWidget {
   const _FinishWorkoutSheet();
 
   @override
-  State<_FinishWorkoutSheet> createState() => _FinishWorkoutSheetState();
+  ConsumerState<_FinishWorkoutSheet> createState() => _FinishWorkoutSheetState();
 }
 
-class _FinishWorkoutSheetState extends State<_FinishWorkoutSheet> {
+class _FinishWorkoutSheetState extends ConsumerState<_FinishWorkoutSheet> {
   final _notesController = TextEditingController();
   String _difficulty = 'Moderate';
   int _energy = 3;
   String _pain = 'None';
+  bool _updateOriginalPlan = false;
 
   final List<String> _difficulties = [
     'Very Easy',
@@ -1521,6 +1571,8 @@ class _FinishWorkoutSheetState extends State<_FinishWorkoutSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final activeWorkout = ref.watch(activeWorkoutProvider);
+    final hasPlan = activeWorkout != null && activeWorkout.planId.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -1595,28 +1647,30 @@ class _FinishWorkoutSheetState extends State<_FinishWorkoutSheet> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(5, (i) {
-                          final value = i + 1;
+                        children: List.generate(5, (index) {
+                          final value = index + 1;
                           final selected = _energy == value;
                           return GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
                               setState(() => _energy = value);
                             },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 44,
-                              height: 44,
+                            child: Container(
+                              width: 50,
+                              height: 50,
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle,
                                 color: selected
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.surfaceContainerHighest,
+                                    ? theme.colorScheme.primaryContainer
+                                    : theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
                                 border: selected
-                                    ? null
+                                    ? Border.all(
+                                        color: theme.colorScheme.primary,
+                                        width: 2,
+                                      )
                                     : Border.all(
                                         color: theme.colorScheme.outline,
                                       ),
@@ -1627,7 +1681,7 @@ class _FinishWorkoutSheetState extends State<_FinishWorkoutSheet> {
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w800,
                                     color: selected
-                                        ? Colors.black
+                                        ? theme.colorScheme.onPrimaryContainer
                                         : theme.colorScheme.onSurface,
                                   ),
                                 ),
@@ -1674,6 +1728,29 @@ class _FinishWorkoutSheetState extends State<_FinishWorkoutSheet> {
                           hintText: 'How did it go?',
                         ),
                       ),
+                      if (hasPlan) ...[
+                        const SizedBox(height: 16),
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Update original plan template',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Save exercise substitutions or removals back to the plan.',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          value: _updateOriginalPlan,
+                          onChanged: (val) {
+                            setState(() {
+                              _updateOriginalPlan = val ?? false;
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      ],
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -1686,6 +1763,7 @@ class _FinishWorkoutSheetState extends State<_FinishWorkoutSheet> {
                       'difficulty': _difficulty,
                       'energy': _energy,
                       'pain': _pain,
+                      'updateOriginalPlan': _updateOriginalPlan,
                     });
                   },
                   child: const Text('Save Workout'),
