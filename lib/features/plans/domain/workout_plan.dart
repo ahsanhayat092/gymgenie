@@ -101,6 +101,7 @@ class WorkoutPlan {
     required this.exercises,
     required this.createdAt,
     required this.updatedAt,
+    this.adaptationMessage,
   });
 
   final String id;
@@ -109,6 +110,7 @@ class WorkoutPlan {
   final List<PlannedExercise> exercises;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? adaptationMessage;
 
   WorkoutPlan copyWith({
     String? id,
@@ -117,6 +119,7 @@ class WorkoutPlan {
     List<PlannedExercise>? exercises,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? adaptationMessage,
   }) {
     return WorkoutPlan(
       id: id ?? this.id,
@@ -125,6 +128,7 @@ class WorkoutPlan {
       exercises: exercises ?? this.exercises,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      adaptationMessage: adaptationMessage ?? this.adaptationMessage,
     );
   }
 
@@ -140,6 +144,7 @@ class WorkoutPlan {
           .toList(),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      adaptationMessage: map['adaptationMessage'] as String?,
     );
   }
 
@@ -150,6 +155,7 @@ class WorkoutPlan {
       'exercises': exercises.map((e) => e.toMap()).toList(),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      if (adaptationMessage != null) 'adaptationMessage': adaptationMessage,
     };
   }
 }

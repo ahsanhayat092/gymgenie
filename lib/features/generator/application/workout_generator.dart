@@ -132,6 +132,57 @@ class WorkoutGenerator {
     final programStart = _nextProgramStartDate(existingPlans);
     final exercises = await _exerciseRepo.loadExercises();
 
+    // Load logs to evaluate adaptive feedback
+    final logs = await _logRepo.watchLogs().first;
+    double factor = 1.0;
+    String? adaptationMessage;
+
+    if (logs.isNotEmpty) {
+      final lastLog = logs.first;
+      final diffRating = lastLog.difficultyRating;
+      final pain = lastLog.painLevel;
+      final energy = lastLog.energyLevel;
+
+      final isHardDifficulty = diffRating == 'Hard' || diffRating == 'Very Hard';
+      final isSeverePain = pain == 'Moderate' || pain == 'Severe';
+      final isLowEnergy = energy != null && energy <= 2;
+
+      if (isHardDifficulty || isSeverePain || isLowEnergy) {
+        factor = 0.85;
+        adaptationMessage = "Your last session was harder than expected. Today's workout has been reduced by approximately 15%.";
+      } else if (logs.length >= 3) {
+        bool comfortable = true;
+        for (var i = 0; i < 3; i++) {
+          final log = logs[i];
+          final d = log.difficultyRating;
+          final p = log.painLevel;
+          final e = log.energyLevel;
+
+          final isComfortableDifficulty = d == 'Easy' || d == 'Very Easy' || d == 'Moderate';
+          final isComfortablePain = p == 'None' || p == 'Mild';
+          final isHighEnergy = e == null || e >= 4;
+
+          int totalLoggedSets = 0;
+          int completedLoggedSets = 0;
+          for (final exLog in log.exercises) {
+            totalLoggedSets += exLog.sets.length;
+            completedLoggedSets += exLog.sets.where((s) => s.completed).length;
+          }
+          final completionRate = totalLoggedSets > 0 ? (completedLoggedSets / totalLoggedSets) : 0.0;
+
+          if (!isComfortableDifficulty || !isComfortablePain || !isHighEnergy || completionRate < 0.90) {
+            comfortable = false;
+            break;
+          }
+        }
+
+        if (comfortable) {
+          factor = 1.10;
+          adaptationMessage = "You completed your last three sessions comfortably. GymZish has increased the training stimulus slightly.";
+        }
+      }
+    }
+
     // 1. Filter exercises by equipment selection.
     // Bodyweight is always available.
     final allowedEquipment = survey.equipment.map((e) => e.toLowerCase()).toSet();
@@ -194,9 +245,23 @@ class WorkoutGenerator {
       var orderIdx = 0;
 
       for (final ex in selectedStrength) {
-        final targetSets = _determineSets(survey.level);
-        final targetReps = _determineReps(survey.goal);
-        final targetWeight = survey.experience == 'Beginner' ? 0.0 : 10.0;
+        var targetSets = _determineSets(survey.level);
+        var targetReps = _determineReps(survey.goal);
+        var targetWeight = survey.experience == 'Beginner' ? 0.0 : 10.0;
+
+        if (factor < 1.0) {
+          targetSets = max(2, targetSets - 1);
+          targetReps = max(5, (targetReps * factor).round());
+          if (targetWeight > 0) {
+            targetWeight = (targetWeight * factor).roundToDouble();
+          }
+        } else if (factor > 1.0) {
+          targetSets = min(5, targetSets + 1);
+          targetReps = min(20, (targetReps * factor).round());
+          if (targetWeight > 0) {
+            targetWeight = (targetWeight * factor).roundToDouble();
+          }
+        }
 
         plannedExercises.add(PlannedExercise(
           exerciseId: ex.id,
@@ -213,13 +278,17 @@ class WorkoutGenerator {
       if (needsCardio && survey.cardioAvailable.isNotEmpty) {
         final chosenCardio = survey.cardioAvailable[random.nextInt(survey.cardioAvailable.length)];
         final cardioName = _cardioNames[chosenCardio] ?? 'General Cardio';
-        final cardioDuration = _determineCardioDuration(survey.goal, survey.durationMinutes);
-        final cardioResistance = _determineCardioResistance(survey.level);
+        var cardioDuration = _determineCardioDuration(survey.goal, survey.durationMinutes);
+        var cardioResistance = _determineCardioResistance(survey.level);
+
+        if (factor != 1.0) {
+          cardioDuration = max(10, (cardioDuration * factor).round());
+          cardioResistance = max(1.0, (cardioResistance * factor).roundToDouble());
+        }
 
         plannedExercises.add(PlannedExercise(
           exerciseId: chosenCardio.toLowerCase().replaceAll(' ', '-'),
           exerciseName: cardioName,
-          // Strength fields are irrelevant — cardio uses isCardio fields below
           targetSets: 1,
           targetReps: 1,
           targetWeight: 0.0,
@@ -238,6 +307,7 @@ class WorkoutGenerator {
         exercises: plannedExercises,
         createdAt: programStart,
         updatedAt: programStart,
+        adaptationMessage: adaptationMessage,
       );
 
       await _planRepo.createPlan(plan);
