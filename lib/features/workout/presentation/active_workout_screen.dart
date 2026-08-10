@@ -391,6 +391,22 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
     );
   }
 
+  void _viewExerciseDetail() async {
+    final exercise = await ref.read(
+      exerciseByIdProvider(widget.exercise.exerciseId).future,
+    );
+    if (!mounted) return;
+    if (exercise == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Exercise details not available.'),
+        ),
+      );
+      return;
+    }
+    context.push('/exercises/detail', extra: exercise);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -447,6 +463,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                       ),
                     ),
                     _PopupMenu(
+                      onView: _viewExerciseDetail,
                       onSubstitute: _showSubstitutionPicker,
                       onRemove: () {
                         HapticFeedback.lightImpact();
@@ -486,8 +503,13 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
 }
 
 class _PopupMenu extends StatelessWidget {
-  const _PopupMenu({required this.onSubstitute, required this.onRemove});
+  const _PopupMenu({
+    required this.onView,
+    required this.onSubstitute,
+    required this.onRemove,
+  });
 
+  final VoidCallback onView;
   final VoidCallback onSubstitute;
   final VoidCallback onRemove;
 
@@ -500,6 +522,17 @@ class _PopupMenu extends StatelessWidget {
         color: theme.colorScheme.onSurfaceVariant,
       ),
       itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'view',
+          onTap: onView,
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: theme.colorScheme.primary, size: 20),
+              const SizedBox(width: 12),
+              const Text('View details'),
+            ],
+          ),
+        ),
         PopupMenuItem(
           value: 'substitute',
           onTap: onSubstitute,
