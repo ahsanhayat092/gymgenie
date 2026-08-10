@@ -44,6 +44,11 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final library = ref.watch(exerciseLibraryProvider);
+    final exercisesList = library.valueOrNull ?? [];
+    final Map<String, int> counts = {};
+    for (final e in exercisesList) {
+      counts[e.muscleGroup] = (counts[e.muscleGroup] ?? 0) + 1;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Exercises')),
@@ -76,13 +81,13 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               children: [
                 _FilterChip(
-                  label: 'All',
+                  label: exercisesList.isEmpty ? 'All' : 'All (${exercisesList.length})',
                   selected: _selectedGroup == null,
                   onSelected: () => setState(() => _selectedGroup = null),
                 ),
                 for (final group in ExerciseRepository.muscleGroups)
                   _FilterChip(
-                    label: group,
+                    label: exercisesList.isEmpty ? group : '$group (${counts[group] ?? 0})',
                     selected: _selectedGroup == group,
                     onSelected: () => setState(() => _selectedGroup = group),
                   ),
