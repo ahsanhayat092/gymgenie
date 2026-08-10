@@ -14,6 +14,7 @@ import 'package:gymgenie/features/profile/data/profile_repository.dart';
 import 'package:gymgenie/features/workout/application/active_workout_controller.dart';
 import 'package:gymgenie/features/workout/application/rest_timer_controller.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
+import 'package:gymgenie/features/plans/domain/workout_plan.dart';
 import 'package:gymgenie/features/social/data/social_repository.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
@@ -769,8 +770,61 @@ class _CardioMetrics extends ConsumerWidget {
     return 'Incline %';
   }
 
+  List<Widget> _buildSegmentsTimeline(ThemeData theme, List<CardioSegment> segments) {
+    final widgets = <Widget>[];
+    int currentMinutes = 0;
+
+    for (var i = 0; i < segments.length; i++) {
+      final seg = segments[i];
+      final start = currentMinutes;
+      final end = currentMinutes + seg.durationMinutes;
+      currentMinutes = end;
+
+      final isLast = i == segments.length - 1;
+      final isBikeOrRow = exercise.exerciseName.contains('Bike') || exercise.exerciseName.contains('Rowing');
+      final forceLabel = isBikeOrRow ? 'Level ${seg.inclineOrResistance.toInt()}' : '${seg.inclineOrResistance.toInt()}% Incline';
+
+      widgets.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: isLast ? 0 : 6),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 72,
+                child: Text(
+                  '$start–$end min',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.circle,
+                size: 6,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${seg.speedKmh} km/h  •  $forceLabel',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return widgets;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final notifier = ref.read(activeWorkoutProvider.notifier);
 
     return Column(
@@ -850,6 +904,35 @@ class _CardioMetrics extends ConsumerWidget {
             notifier.updateCardio(index, caloriesBurned: parsed ?? 0.0);
           },
         ),
+        if (exercise.cardioSegments != null && exercise.cardioSegments!.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AI CARDIO PRESCRIPTION',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ..._buildSegmentsTimeline(theme, exercise.cardioSegments!),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

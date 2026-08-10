@@ -27,6 +27,10 @@ class PlanDetailScreen extends ConsumerWidget {
       weight == weight.roundToDouble() ? '${weight.toInt()}' : '$weight';
 
   String _exerciseSummary(PlannedExercise exercise) {
+    if (exercise.isCardio) {
+      final mins = exercise.targetDurationMinutes ?? 0;
+      return '$mins min AI Training Prescription';
+    }
     final base = '${exercise.targetSets} × ${exercise.targetReps}';
     if (exercise.targetWeight <= 0) return base;
     return '$base @ ${_formatWeight(exercise.targetWeight)} kg';
@@ -320,6 +324,58 @@ class _ExerciseTile extends StatelessWidget {
   final String summary;
   final VoidCallback onTap;
 
+  List<Widget> _buildSegmentsTimeline(ThemeData theme, List<CardioSegment> segments) {
+    final widgets = <Widget>[];
+    int currentMinutes = 0;
+
+    for (var i = 0; i < segments.length; i++) {
+      final seg = segments[i];
+      final start = currentMinutes;
+      final end = currentMinutes + seg.durationMinutes;
+      currentMinutes = end;
+
+      final isLast = i == segments.length - 1;
+      final isBikeOrRow = exercise.exerciseName.contains('Bike') || exercise.exerciseName.contains('Rowing');
+      final forceLabel = isBikeOrRow ? 'Level ${seg.inclineOrResistance.toInt()}' : '${seg.inclineOrResistance.toInt()}% Incline';
+
+      widgets.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: isLast ? 0 : 6),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 72,
+                child: Text(
+                  '$start–$end min',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.circle,
+                size: 6,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${seg.speedKmh} km/h  •  $forceLabel',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return widgets;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -338,6 +394,7 @@ class _ExerciseTile extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: 40,
@@ -374,12 +431,46 @@ class _ExerciseTile extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      if (exercise.isCardio &&
+                          exercise.cardioSegments != null &&
+                          exercise.cardioSegments!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'AI CARDIO PRESCRIPTION',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ..._buildSegmentsTimeline(theme, exercise.cardioSegments!),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: theme.colorScheme.onSurfaceVariant,
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

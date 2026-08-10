@@ -137,6 +137,45 @@ class WorkoutGenerator {
     double factor = 1.0;
     String? adaptationMessage;
 
+    // Determine progressive cardio duration (base is from survey or previous week +2 progress)
+    int baseCardioDuration = _determineCardioDuration(survey.goal, survey.durationMinutes);
+    if (existingPlans.isNotEmpty) {
+      final sortedPlans = [...existingPlans]
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      WorkoutPlan? latestCardioPlan;
+      for (final p in sortedPlans) {
+        if (p.exercises.any((e) => e.isCardio)) {
+          latestCardioPlan = p;
+          break;
+        }
+      }
+
+      if (latestCardioPlan != null) {
+        final latestCardioEx = latestCardioPlan.exercises.firstWhere((e) => e.isCardio);
+        final latestDuration = latestCardioEx.targetDurationMinutes ?? 20;
+
+        baseCardioDuration = latestDuration + 2;
+
+        if (logs.isNotEmpty) {
+          final lastLog = logs.first;
+          final diff = lastLog.difficultyRating;
+          final energy = lastLog.energyLevel;
+          final pain = lastLog.painLevel;
+
+          final isHard = diff == 'Hard' || diff == 'Very Hard';
+          final isLowEnergy = energy != null && energy <= 2;
+          final isSeverePain = pain == 'Moderate' || pain == 'Severe';
+
+          if (isHard || isLowEnergy || isSeverePain) {
+            baseCardioDuration = max(15, (baseCardioDuration * 0.90).round());
+          } else if (diff == 'Easy' || diff == 'Very Easy') {
+            baseCardioDuration += 2;
+          }
+        }
+      }
+    }
+
     if (logs.isNotEmpty) {
       final lastLog = logs.first;
       final diffRating = lastLog.difficultyRating;
@@ -278,13 +317,50 @@ class WorkoutGenerator {
       if (needsCardio && survey.cardioAvailable.isNotEmpty) {
         final chosenCardio = survey.cardioAvailable[random.nextInt(survey.cardioAvailable.length)];
         final cardioName = _cardioNames[chosenCardio] ?? 'General Cardio';
-        var cardioDuration = _determineCardioDuration(survey.goal, survey.durationMinutes);
+        var cardioDuration = baseCardioDuration;
         var cardioResistance = _determineCardioResistance(survey.level);
 
         if (factor != 1.0) {
           cardioDuration = max(10, (cardioDuration * factor).round());
           cardioResistance = max(1.0, (cardioResistance * factor).roundToDouble());
         }
+        
+        cardioDuration = cardioDuration.clamp(15, 60);
+
+        final warmUpMins = max(3, (cardioDuration * 0.15).round());
+        final coolDownMins = max(3, (cardioDuration * 0.15).round());
+        final workMins = cardioDuration - warmUpMins - coolDownMins;
+
+        double workSpeed = 4.5;
+        double workIncline = cardioResistance;
+        if (survey.experience == 'Beginner') {
+          workSpeed = 3.5;
+        } else if (survey.experience == 'Advanced') {
+          workSpeed = 5.5;
+        }
+
+        if (survey.weightKg > 90) {
+          workSpeed = max(3.0, workSpeed - 0.5);
+          workIncline = min(15.0, workIncline + 2.0);
+        }
+
+        final List<CardioSegment> segments = [
+          CardioSegment(
+            durationMinutes: warmUpMins,
+            speedKmh: max(2.5, workSpeed - 1.0),
+            inclineOrResistance: max(0.0, workIncline - 2.0),
+          ),
+          CardioSegment(
+            durationMinutes: workMins,
+            speedKmh: workSpeed,
+            inclineOrResistance: workIncline,
+          ),
+          CardioSegment(
+            durationMinutes: coolDownMins,
+            speedKmh: max(2.5, workSpeed - 1.0),
+            inclineOrResistance: max(0.0, workIncline - 2.0),
+          ),
+        ];
 
         plannedExercises.add(PlannedExercise(
           exerciseId: chosenCardio.toLowerCase().replaceAll(' ', '-'),
@@ -296,6 +372,7 @@ class WorkoutGenerator {
           isCardio: true,
           targetDurationMinutes: cardioDuration,
           targetResistanceLevel: cardioResistance,
+          cardioSegments: segments,
         ));
       }
 

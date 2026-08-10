@@ -55,6 +55,7 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
           sets: const [],
           durationMinutes: (pe.targetDurationMinutes ?? 20).toDouble(),
           resistanceLevel: pe.targetResistanceLevel ?? 5.0,
+          cardioSegments: pe.cardioSegments,
         );
       }
 

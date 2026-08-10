@@ -1,5 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class CardioSegment {
+  const CardioSegment({
+    required this.durationMinutes,
+    required this.speedKmh,
+    required this.inclineOrResistance,
+  });
+
+  final int durationMinutes;
+  final double speedKmh;
+  final double inclineOrResistance;
+
+  factory CardioSegment.fromMap(Map<String, dynamic> map) {
+    return CardioSegment(
+      durationMinutes: (map['durationMinutes'] as num?)?.toInt() ?? 0,
+      speedKmh: (map['speedKmh'] as num?)?.toDouble() ?? 0.0,
+      inclineOrResistance: (map['inclineOrResistance'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'durationMinutes': durationMinutes,
+      'speedKmh': speedKmh,
+      'inclineOrResistance': inclineOrResistance,
+    };
+  }
+}
+
 /// An exercise slot inside a [WorkoutPlan], with target set/rep/weight goals
 /// for strength exercises, or duration/resistance for cardio exercises.
 class PlannedExercise {
@@ -13,6 +41,7 @@ class PlannedExercise {
     this.isCardio = false,
     this.targetDurationMinutes,
     this.targetResistanceLevel,
+    this.cardioSegments,
   });
 
   final String exerciseId;
@@ -39,6 +68,9 @@ class PlannedExercise {
   /// Resistance/incline level (1-20 scale) for cardio machines.
   final double? targetResistanceLevel;
 
+  /// Prescribed intervals/segments if this is an AI-generated cardio training session.
+  final List<CardioSegment>? cardioSegments;
+
   PlannedExercise copyWith({
     String? exerciseId,
     String? exerciseName,
@@ -49,6 +81,7 @@ class PlannedExercise {
     bool? isCardio,
     int? targetDurationMinutes,
     double? targetResistanceLevel,
+    List<CardioSegment>? cardioSegments,
   }) {
     return PlannedExercise(
       exerciseId: exerciseId ?? this.exerciseId,
@@ -60,10 +93,12 @@ class PlannedExercise {
       isCardio: isCardio ?? this.isCardio,
       targetDurationMinutes: targetDurationMinutes ?? this.targetDurationMinutes,
       targetResistanceLevel: targetResistanceLevel ?? this.targetResistanceLevel,
+      cardioSegments: cardioSegments ?? this.cardioSegments,
     );
   }
 
   factory PlannedExercise.fromMap(Map<String, dynamic> map) {
+    final rawSegments = map['cardioSegments'] as List<dynamic>?;
     return PlannedExercise(
       exerciseId: map['exerciseId'] as String? ?? '',
       exerciseName: map['exerciseName'] as String? ?? '',
@@ -74,6 +109,9 @@ class PlannedExercise {
       isCardio: (map['isCardio'] as bool?) ?? false,
       targetDurationMinutes: (map['targetDurationMinutes'] as num?)?.toInt(),
       targetResistanceLevel: (map['targetResistanceLevel'] as num?)?.toDouble(),
+      cardioSegments: rawSegments
+          ?.map((e) => CardioSegment.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList(),
     );
   }
 
@@ -88,6 +126,8 @@ class PlannedExercise {
       'isCardio': isCardio,
       if (targetDurationMinutes != null) 'targetDurationMinutes': targetDurationMinutes,
       if (targetResistanceLevel != null) 'targetResistanceLevel': targetResistanceLevel,
+      if (cardioSegments != null)
+        'cardioSegments': cardioSegments!.map((s) => s.toMap()).toList(),
     };
   }
 }

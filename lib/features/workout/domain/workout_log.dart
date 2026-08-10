@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gymgenie/features/plans/domain/workout_plan.dart';
 
 /// A single logged set inside an [ExerciseLog].
 class SetLog {
@@ -62,6 +63,7 @@ class ExerciseLog {
     this.inclinePct,
     this.resistanceLevel,
     this.caloriesBurned,
+    this.cardioSegments,
   });
 
   final String exerciseId;
@@ -73,6 +75,7 @@ class ExerciseLog {
   final double? inclinePct;
   final double? resistanceLevel;
   final double? caloriesBurned;
+  final List<CardioSegment>? cardioSegments;
 
   double get volume => sets
       .where((s) => s.completed)
@@ -90,6 +93,7 @@ class ExerciseLog {
     double? inclinePct,
     double? resistanceLevel,
     double? caloriesBurned,
+    List<CardioSegment>? cardioSegments,
   }) {
     return ExerciseLog(
       exerciseId: exerciseId ?? this.exerciseId,
@@ -101,11 +105,13 @@ class ExerciseLog {
       inclinePct: inclinePct ?? this.inclinePct,
       resistanceLevel: resistanceLevel ?? this.resistanceLevel,
       caloriesBurned: caloriesBurned ?? this.caloriesBurned,
+      cardioSegments: cardioSegments ?? this.cardioSegments,
     );
   }
 
   factory ExerciseLog.fromMap(Map<String, dynamic> map) {
     final rawSets = (map['sets'] as List<dynamic>?) ?? const <dynamic>[];
+    final rawSegments = map['cardioSegments'] as List<dynamic>?;
     return ExerciseLog(
       exerciseId: map['exerciseId'] as String? ?? '',
       exerciseName: map['exerciseName'] as String? ?? '',
@@ -118,6 +124,9 @@ class ExerciseLog {
       inclinePct: (map['inclinePct'] as num?)?.toDouble(),
       resistanceLevel: (map['resistanceLevel'] as num?)?.toDouble(),
       caloriesBurned: (map['caloriesBurned'] as num?)?.toDouble(),
+      cardioSegments: rawSegments
+          ?.map((e) => CardioSegment.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList(),
     );
   }
 
@@ -132,6 +141,8 @@ class ExerciseLog {
       if (inclinePct != null) 'inclinePct': inclinePct,
       if (resistanceLevel != null) 'resistanceLevel': resistanceLevel,
       if (caloriesBurned != null) 'caloriesBurned': caloriesBurned,
+      if (cardioSegments != null)
+        'cardioSegments': cardioSegments!.map((s) => s.toMap()).toList(),
     };
   }
 }
