@@ -122,7 +122,87 @@ class ProfileScreen extends ConsumerWidget {
                   style: theme.textTheme.bodySmall,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.monitor_weight_outlined, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Body Metrics',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _MetricItem(label: 'Height', value: profile.heightCm > 0 ? '${profile.heightCm.toStringAsFixed(0)} cm' : '--'),
+                          _MetricItem(label: 'Weight', value: profile.weightKg > 0 ? '${profile.weightKg.toStringAsFixed(1)} kg' : '--'),
+                          _MetricItem(label: 'Age', value: profile.age > 0 ? '${profile.age}' : '--'),
+                          _MetricItem(label: 'Gender', value: profile.gender.isNotEmpty ? profile.gender : '--'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.fitness_center, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Training Profile',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _ProfileRow(
+                        label: 'Fitness Goal',
+                        value: profile.fitnessGoal.isNotEmpty ? profile.fitnessGoal : 'Not set',
+                      ),
+                      const Divider(height: 16),
+                      _ProfileRow(
+                        label: 'Experience',
+                        value: profile.experience.isNotEmpty ? profile.experience : 'Not set',
+                      ),
+                      const Divider(height: 16),
+                      _ProfileRow(
+                        label: 'Equipment',
+                        value: profile.equipment.isNotEmpty
+                            ? profile.equipment.join(', ')
+                            : 'Bodyweight only',
+                      ),
+                      if (profile.cardioEquipment.isNotEmpty) ...[
+                        const Divider(height: 16),
+                        _ProfileRow(
+                          label: 'Cardio Equipment',
+                          value: profile.cardioEquipment.join(', '),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
               Card(
                 child: Column(
                   children: [
@@ -276,6 +356,68 @@ class ProfileScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _MetricItem extends StatelessWidget {
+  const _MetricItem({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
