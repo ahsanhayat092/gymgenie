@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,7 +19,8 @@ class WorkoutHistoryScreen extends ConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete workout?'),
         content: Text(
-            'Delete "${log.planName}" from ${formatDate(log.date)}? This cannot be undone.'),
+          'Delete "${log.planName}" from ${formatDate(log.date)}? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -54,7 +56,7 @@ class WorkoutHistoryScreen extends ConsumerWidget {
               ),
             );
           }
-          // Logs arrive newest-first; group them by calendar day.
+
           final groups = <_DayGroup>[];
           for (final log in list) {
             final day = DateTime(log.date.year, log.date.month, log.date.day);
@@ -74,12 +76,12 @@ class WorkoutHistoryScreen extends ConsumerWidget {
               for (final group in groups) {
                 if (index == cursor) {
                   return Padding(
-                    padding: const EdgeInsets.only(top: 16, bottom: 8),
+                    padding: const EdgeInsets.only(top: 20, bottom: 8),
                     child: Text(
                       formatDate(group.day),
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   );
@@ -123,12 +125,16 @@ class _HistoryTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isPending = log.id.startsWith('pending_');
+
     return Dismissible(
       key: ValueKey(log.id),
       direction: DismissDirection.endToStart,
       confirmDismiss: (_) => onConfirmDelete(),
       onDismissed: (_) async {
         try {
+          HapticFeedback.lightImpact();
           await ref.read(logRepositoryProvider).deleteLog(log.id);
         } catch (e) {
           if (!context.mounted) return;
@@ -140,58 +146,119 @@ class _HistoryTile extends ConsumerWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.errorContainer,
+          color: theme.colorScheme.errorContainer,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(Icons.delete_outline,
-            color: Theme.of(context).colorScheme.onErrorContainer),
+        child: Icon(
+          Icons.delete_outline,
+          color: theme.colorScheme.onErrorContainer,
+        ),
       ),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: ListTile(
-          leading: Icon(
-            Icons.fitness_center,
-            color: log.id.startsWith('pending_')
-                ? Colors.orange
-                : Theme.of(context).colorScheme.primary,
-          ),
-          title: Row(
-            children: [
-              Expanded(child: Text(log.planName)),
-              if (log.id.startsWith('pending_')) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.cloud_off, size: 12, color: Colors.orange),
-                      SizedBox(width: 4),
-                      Text(
-                        'Pending Sync',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                        ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outline),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {},
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isPending
+                            ? Colors.orange
+                            : theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 14),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isPending
+                            ? Colors.orange.withValues(alpha: 0.15)
+                            : theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isPending
+                            ? Icons.cloud_off_outlined
+                            : Icons.fitness_center_rounded,
+                        color: isPending
+                            ? Colors.orange
+                            : theme.colorScheme.primary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  log.planName,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isPending) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color:
+                                          Colors.orange.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Pending',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${log.durationMinutes} min • ${log.completedSets} sets • ${formatVolume(log.totalVolume)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ],
+              ),
+            ),
           ),
-          subtitle: Text(
-            '${log.durationMinutes} min • ${log.completedSets} sets',
-          ),
-          trailing: Text(formatVolume(log.totalVolume)),
         ),
       ),
     );

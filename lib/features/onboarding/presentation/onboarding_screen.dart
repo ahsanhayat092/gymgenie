@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:gymgenie/core/widgets/selectable_card.dart';
+import 'package:gymgenie/core/widgets/step_indicator.dart';
 import 'package:gymgenie/features/profile/data/profile_repository.dart';
 import 'package:gymgenie/features/profile/domain/user_profile.dart';
 
 /// First-run onboarding survey shown to every new user.
-/// Collects personal details + fitness preferences, saves them to the
-/// Firestore profile, sets [UserProfile.onboardingComplete] = true,
-/// and navigates to [/home].
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -20,36 +21,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _currentStep = 0;
   bool _isSaving = false;
 
-  // ── Step 1: About Me ──────────────────────────────────────────────────────
+  static const int _totalSteps = 6;
+
+  // Step 1: About Me
   final _ageController = TextEditingController(text: '25');
   final _heightController = TextEditingController(text: '175');
   final _weightController = TextEditingController(text: '70');
   String _gender = 'Male';
   String _experience = 'Beginner';
 
-  // ── Step 2: Goal ──────────────────────────────────────────────────────────
+  // Step 2: Goal
   String _goal = 'Build muscle';
 
-  // ── Step 3: Availability ──────────────────────────────────────────────────
+  // Step 3: Availability
   int _daysPerWeek = 3;
   int _durationMinutes = 45;
 
-  // ── Step 4: Intensity ─────────────────────────────────────────────────────
+  // Step 4: Intensity
   String _level = 'Moderate';
 
-  // ── Step 5: Equipment ─────────────────────────────────────────────────────
+  // Step 5: Equipment
   final List<String> _equipmentOptions = [
-    'Barbell', 'Dumbbell', 'Cable', 'Machine', 'Kettlebell', 'Bodyweight',
+    'Barbell',
+    'Dumbbell',
+    'Cable',
+    'Machine',
+    'Kettlebell',
+    'Bodyweight',
   ];
-  late List<String> _selectedEquipment = ['Barbell', 'Dumbbell', 'Bodyweight'];
+  final List<String> _selectedEquipment = ['Barbell', 'Dumbbell', 'Bodyweight'];
 
-  // ── Step 6: Cardio ────────────────────────────────────────────────────────
+  // Step 6: Cardio
   final List<String> _cardioOptions = [
-    'Treadmill', 'Bike', 'Elliptical', 'Rowing', 'Stair climber',
+    'Treadmill',
+    'Bike',
+    'Elliptical',
+    'Rowing',
+    'Stair climber',
   ];
-  List<String> _selectedCardio = ['Treadmill', 'Bike'];
-
-  static const int _totalSteps = 6;
+  final List<String> _selectedCardio = ['Treadmill', 'Bike'];
 
   @override
   void dispose() {
@@ -61,6 +71,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _next() {
+    HapticFeedback.lightImpact();
     if (_currentStep < _totalSteps - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 320),
@@ -70,6 +81,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _prev() {
+    HapticFeedback.lightImpact();
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 320),
@@ -79,9 +91,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
+    HapticFeedback.lightImpact();
     setState(() => _isSaving = true);
     try {
-      // Build a profile with the survey answers + onboardingComplete flag.
       final existing = ref.read(userProfileProvider).valueOrNull;
       final now = DateTime.now();
 
@@ -92,12 +104,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         createdAt: existing?.createdAt ?? now,
         weeklyWorkoutGoal: _daysPerWeek,
         onboardingComplete: true,
-        // Personal metrics
         age: int.tryParse(_ageController.text) ?? 25,
         heightCm: double.tryParse(_heightController.text) ?? 175.0,
         weightKg: double.tryParse(_weightController.text) ?? 70.0,
         gender: _gender,
-        // Fitness prefs
         experience: _experience,
         fitnessGoal: _goal,
         sessionDurationMinutes: _durationMinutes,
@@ -109,7 +119,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(profileRepositoryProvider).saveProfile(profile);
 
       if (!mounted) return;
-      // Router redirect will detect onboardingComplete = true and allow /home.
       context.go('/home');
     } catch (e) {
       setState(() => _isSaving = false);
@@ -119,8 +128,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
     }
   }
-
-  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -132,12 +139,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(),
+              CircularProgressIndicator(color: theme.colorScheme.primary),
               const SizedBox(height: 20),
               Text(
                 'Setting up your profile…',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -151,7 +159,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Progress bar + step counter ─────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
               child: Column(
@@ -159,12 +166,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   Row(
                     children: [
-                      // App logo / brand
                       Text(
                         'GymGenie',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                       const Spacer(),
@@ -176,19 +182,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (_currentStep + 1) / _totalSteps,
-                      minHeight: 6,
-                    ),
+                  const SizedBox(height: 16),
+                  StepIndicator(
+                    currentStep: _currentStep,
+                    totalSteps: _totalSteps,
                   ),
                 ],
               ),
             ),
-
-            // ── Pages ────────────────────────────────────────────────────────
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -204,8 +205,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ],
               ),
             ),
-
-            // ── Navigation footer ─────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
               child: Row(
@@ -217,10 +216,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: const Text('Back'),
                     )
                   else
-                    const SizedBox(),
+                    const SizedBox.shrink(),
                   FilledButton(
                     onPressed: isLastStep ? _finish : _next,
-                    child: Text(isLastStep ? 'Get Started 🚀' : 'Continue'),
+                    child: Text(isLastStep ? 'Get Started' : 'Continue'),
                   ),
                 ],
               ),
@@ -231,16 +230,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  // ── Step builders ─────────────────────────────────────────────────────────
-
   Widget _buildAboutMeStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       children: [
         Text(
-          'Welcome to GymGenie! 👋',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          'Welcome to GymGenie',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -253,22 +251,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         Row(
           children: [
             Expanded(
-              child: TextFormField(
+              child: _MetricInput(
+                label: 'Age',
                 controller: _ageController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Age'),
+                suffix: 'years',
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
-              child: DropdownButtonFormField<String>(
+              child: _DropdownInput(
+                label: 'Gender',
                 value: _gender,
-                decoration: const InputDecoration(labelText: 'Gender'),
-                items: const [
-                  DropdownMenuItem(value: 'Male', child: Text('Male')),
-                  DropdownMenuItem(value: 'Female', child: Text('Female')),
-                  DropdownMenuItem(value: 'Other', child: Text('Other')),
-                ],
+                items: const ['Male', 'Female', 'Other'],
                 onChanged: (val) => setState(() => _gender = val ?? 'Male'),
               ),
             ),
@@ -278,31 +272,38 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         Row(
           children: [
             Expanded(
-              child: TextFormField(
+              child: _MetricInput(
+                label: 'Height',
                 controller: _heightController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Height (cm)'),
+                suffix: 'cm',
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
-              child: TextFormField(
+              child: _MetricInput(
+                label: 'Weight',
                 controller: _weightController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Weight (kg)'),
+                suffix: 'kg',
               ),
             ),
           ],
         ),
-        const SizedBox(height: 28),
-        Text('Fitness Experience', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 32),
+        Text(
+          'Fitness Experience',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 12),
         for (final exp in ['Beginner', 'Intermediate', 'Advanced'])
-          RadioListTile<String>(
-            title: Text(exp),
-            value: exp,
-            groupValue: _experience,
-            onChanged: (val) => setState(() => _experience = val ?? 'Beginner'),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SelectableCard(
+              title: exp,
+              selected: _experience == exp,
+              onTap: () => setState(() => _experience = exp),
+            ),
           ),
       ],
     );
@@ -310,21 +311,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildGoalStep(ThemeData theme) {
     final goals = [
-      {'title': 'Lose weight', 'icon': Icons.trending_down},
-      {'title': 'Build muscle', 'icon': Icons.fitness_center},
-      {'title': 'Strength', 'icon': Icons.bolt},
-      {'title': 'Fat loss + muscle retention', 'icon': Icons.shield},
-      {'title': 'General fitness', 'icon': Icons.favorite_outline},
-      {'title': 'Improve endurance', 'icon': Icons.speed},
+      {'title': 'Lose weight', 'icon': Icons.trending_down, 'desc': 'Calorie-focused plans with cardio'},
+      {'title': 'Build muscle', 'icon': Icons.fitness_center, 'desc': 'Hypertrophy-focused resistance training'},
+      {'title': 'Strength', 'icon': Icons.bolt, 'desc': 'Lower reps, heavier loads'},
+      {'title': 'Fat loss + muscle retention', 'icon': Icons.shield, 'desc': 'Body recomposition approach'},
+      {'title': 'General fitness', 'icon': Icons.favorite_outline, 'desc': 'Balanced mix of strength and cardio'},
+      {'title': 'Improve endurance', 'icon': Icons.speed, 'desc': 'Higher volume cardio and conditioning'},
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       children: [
         Text(
           'What is your main goal?',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -333,52 +335,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 20),
-        for (final g in goals) ...[
-          Card(
-            color: _goal == g['title']
-                ? theme.colorScheme.primaryContainer
-                : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: _goal == g['title']
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
-            ),
-            child: ListTile(
-              leading: Icon(g['icon'] as IconData,
-                  color: _goal == g['title']
-                      ? theme.colorScheme.primary
-                      : null),
-              title: Text(g['title'] as String,
-                  style: TextStyle(
-                    fontWeight: _goal == g['title'] ? FontWeight.bold : null,
-                  )),
-              trailing: Radio<String>(
-                value: g['title'] as String,
-                groupValue: _goal,
-                onChanged: (val) =>
-                    setState(() => _goal = val ?? 'Build muscle'),
-              ),
+        const SizedBox(height: 24),
+        for (final g in goals)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SelectableCard(
+              icon: g['icon'] as IconData,
+              title: g['title'] as String,
+              subtitle: g['desc'] as String,
+              selected: _goal == g['title'],
               onTap: () => setState(() => _goal = g['title'] as String),
             ),
           ),
-          const SizedBox(height: 8),
-        ],
       ],
     );
   }
 
   Widget _buildAvailabilityStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       children: [
         Text(
           'How often can you train?',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -388,24 +369,48 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ),
         const SizedBox(height: 32),
-        Text('Days per week', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Slider(
-          value: _daysPerWeek.toDouble(),
-          min: 2, max: 6, divisions: 4,
-          label: '$_daysPerWeek days',
-          onChanged: (v) => setState(() => _daysPerWeek = v.round()),
-        ),
-        Center(
-          child: Text(
-            '$_daysPerWeek days / week',
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.colorScheme.outline),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Days per week',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Slider(
+                value: _daysPerWeek.toDouble(),
+                min: 2,
+                max: 6,
+                divisions: 4,
+                label: '$_daysPerWeek days',
+                onChanged: (v) => setState(() => _daysPerWeek = v.round()),
+              ),
+              Text(
+                '$_daysPerWeek days',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 32),
-        Text('Session duration', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+        Text(
+          'Session duration',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [30, 45, 60, 90].map((dur) {
             final sel = _durationMinutes == dur;
@@ -429,18 +434,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildLevelStep(ThemeData theme) {
     final intensities = [
-      {'title': 'Easy', 'desc': 'Lower set counts, comfortable rest times.'},
-      {'title': 'Moderate', 'desc': 'Standard set ranges, balanced intensity.'},
-      {'title': 'Hard', 'desc': 'Maximum set volume, challenging progressive loads.'},
+      {
+        'title': 'Easy',
+        'desc': 'Lower set counts, comfortable rest times.',
+      },
+      {
+        'title': 'Moderate',
+        'desc': 'Standard set ranges, balanced intensity.',
+      },
+      {
+        'title': 'Hard',
+        'desc': 'Maximum set volume, challenging progressive loads.',
+      },
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       children: [
         Text(
           'Choose your intensity',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -449,51 +464,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 20),
-        for (final item in intensities) ...[
-          Card(
-            color: _level == item['title']
-                ? theme.colorScheme.primaryContainer
-                : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: _level == item['title']
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
-            ),
-            child: ListTile(
-              title: Text(item['title'] as String,
-                  style: TextStyle(
-                    fontWeight:
-                        _level == item['title'] ? FontWeight.bold : null,
-                  )),
-              subtitle: Text(item['desc'] as String),
-              trailing: Radio<String>(
-                value: item['title'] as String,
-                groupValue: _level,
-                onChanged: (val) =>
-                    setState(() => _level = val ?? 'Moderate'),
-              ),
-              onTap: () =>
-                  setState(() => _level = item['title'] as String),
+        const SizedBox(height: 24),
+        for (final item in intensities)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SelectableCard(
+              title: item['title'] as String,
+              subtitle: item['desc'] as String,
+              selected: _level == item['title'],
+              onTap: () => setState(() => _level = item['title'] as String),
             ),
           ),
-          const SizedBox(height: 8),
-        ],
       ],
     );
   }
 
   Widget _buildEquipmentStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       children: [
         Text(
           'What equipment do you have?',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -502,9 +496,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         Wrap(
-          spacing: 8, runSpacing: 8,
+          spacing: 8,
+          runSpacing: 8,
           children: _equipmentOptions.map((eq) {
             final sel = _selectedEquipment.contains(eq);
             return FilterChip(
@@ -520,7 +515,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             );
           }).toList(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Text(
           'Bodyweight is always available.',
           style: theme.textTheme.bodySmall?.copyWith(
@@ -534,12 +529,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildCardioStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       children: [
         Text(
           'Cardio equipment available?',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -548,9 +544,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         Wrap(
-          spacing: 8, runSpacing: 8,
+          spacing: 8,
+          runSpacing: 8,
           children: _cardioOptions.map((cardio) {
             final sel = _selectedCardio.contains(cardio);
             return FilterChip(
@@ -567,41 +564,156 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           }).toList(),
         ),
         const SizedBox(height: 24),
-
-        // ── Final summary card ────────────────────────────────────────────
-        Card(
-          color: theme.colorScheme.primaryContainer.withOpacity(0.4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.check_circle_outline,
-                        color: theme.colorScheme.primary),
-                    const SizedBox(width: 8),
                     Text(
                       'Almost there!',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tap "Get Started" and GymGenie will save everything. You can update these details anytime.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer
+                            .withValues(alpha: 0.85),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your profile is ready. Tap "Get Started" and GymGenie will save everything. You can always update these details from the AI Generator or your Profile at any time.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MetricInput extends StatelessWidget {
+  const _MetricInput({
+    required this.label,
+    required this.controller,
+    required this.suffix,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String suffix;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              Text(
+                suffix,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DropdownInput extends StatelessWidget {
+  const _DropdownInput({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Theme.of(context).colorScheme.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isDense: true,
+          isExpanded: true,
+          items: items
+              .map((item) => DropdownMenuItem(
+                    value: item,
+                    child: Text(item),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }

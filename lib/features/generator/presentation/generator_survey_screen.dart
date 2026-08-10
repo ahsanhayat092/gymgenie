@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:gymgenie/core/widgets/selectable_card.dart';
+import 'package:gymgenie/core/widgets/step_indicator.dart';
 import 'package:gymgenie/features/generator/application/workout_generator.dart';
 import 'package:gymgenie/features/profile/data/profile_repository.dart';
 
@@ -8,54 +12,62 @@ class GeneratorSurveyScreen extends ConsumerStatefulWidget {
   const GeneratorSurveyScreen({super.key});
 
   @override
-  ConsumerState<GeneratorSurveyScreen> createState() => _GeneratorSurveyScreenState();
+  ConsumerState<GeneratorSurveyScreen> createState() =>
+      _GeneratorSurveyScreenState();
 }
 
-class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
+class _GeneratorSurveyScreenState
+    extends ConsumerState<GeneratorSurveyScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
   bool _isGenerating = false;
 
-  // ── Step 1: About Me ──────────────────────────────────────────────────────
+  static const int _totalSteps = 6;
+
+  // Step 1: About Me
   late final TextEditingController _ageController;
   late final TextEditingController _heightController;
   late final TextEditingController _weightController;
   String _gender = 'Male';
   String _experience = 'Beginner';
 
-  // ── Step 2: Goal ──────────────────────────────────────────────────────────
+  // Step 2: Goal
   String _goal = 'Build Muscle';
 
-  // ── Step 3: Availability ──────────────────────────────────────────────────
+  // Step 3: Availability
   int _daysPerWeek = 3;
   int _durationMinutes = 45;
 
-  // ── Step 4: Intensity ─────────────────────────────────────────────────────
+  // Step 4: Intensity
   String _level = 'Moderate';
 
-  // ── Step 5: Equipment ─────────────────────────────────────────────────────
+  // Step 5: Equipment
   final List<String> _equipmentOptions = [
-    'Barbell', 'Dumbbell', 'Cable', 'Machine', 'Kettlebell', 'Bodyweight',
+    'Barbell',
+    'Dumbbell',
+    'Cable',
+    'Machine',
+    'Kettlebell',
+    'Bodyweight',
   ];
-  late List<String> _selectedEquipment;
+  final List<String> _selectedEquipment = ['Barbell', 'Dumbbell', 'Bodyweight'];
 
-  // ── Step 6: Cardio ────────────────────────────────────────────────────────
+  // Step 6: Cardio
   final List<String> _cardioOptions = [
-    'Treadmill', 'Bike', 'Elliptical', 'Rowing', 'Stair climber',
+    'Treadmill',
+    'Bike',
+    'Elliptical',
+    'Rowing',
+    'Stair climber',
   ];
-  late List<String> _selectedCardio;
+  final List<String> _selectedCardio = ['Treadmill', 'Bike'];
 
   @override
   void initState() {
     super.initState();
-    // Initialise with fallback defaults; _prefillFromProfile overwrites these.
     _ageController = TextEditingController(text: '25');
     _heightController = TextEditingController(text: '175');
     _weightController = TextEditingController(text: '70');
-    _selectedEquipment = ['Barbell', 'Dumbbell', 'Bodyweight'];
-    _selectedCardio = ['Treadmill', 'Bike'];
-
-    // Defer profile read until after first build so ref is available.
     WidgetsBinding.instance.addPostFrameCallback((_) => _prefillFromProfile());
   }
 
@@ -68,28 +80,36 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
     super.dispose();
   }
 
-  // ── Pre-fill from profile ─────────────────────────────────────────────────
-
   void _prefillFromProfile() {
     final profile = ref.read(userProfileProvider).valueOrNull;
     if (profile == null || !mounted) return;
 
     setState(() {
       if (profile.age > 0) _ageController.text = profile.age.toString();
-      if (profile.heightCm > 0) _heightController.text = profile.heightCm.round().toString();
-      if (profile.weightKg > 0) _weightController.text = profile.weightKg.round().toString();
+      if (profile.heightCm > 0) {
+        _heightController.text = profile.heightCm.round().toString();
+      }
+      if (profile.weightKg > 0) {
+        _weightController.text = profile.weightKg.round().toString();
+      }
       if (profile.gender.isNotEmpty) _gender = profile.gender;
       if (profile.experience.isNotEmpty) _experience = profile.experience;
       if (profile.fitnessGoal.isNotEmpty) _goal = profile.fitnessGoal;
       _daysPerWeek = profile.weeklyWorkoutGoal.clamp(2, 6);
-      if (profile.sessionDurationMinutes > 0) _durationMinutes = profile.sessionDurationMinutes;
+      if (profile.sessionDurationMinutes > 0) {
+        _durationMinutes = profile.sessionDurationMinutes;
+      }
       if (profile.intensityLevel.isNotEmpty) _level = profile.intensityLevel;
-      if (profile.equipment.isNotEmpty) _selectedEquipment = List.of(profile.equipment);
-      if (profile.cardioEquipment.isNotEmpty) _selectedCardio = List.of(profile.cardioEquipment);
+      if (profile.equipment.isNotEmpty) {
+        _selectedEquipment.clear();
+        _selectedEquipment.addAll(profile.equipment);
+      }
+      if (profile.cardioEquipment.isNotEmpty) {
+        _selectedCardio.clear();
+        _selectedCardio.addAll(profile.cardioEquipment);
+      }
     });
   }
-
-  // ── Write back to profile whenever a field changes ────────────────────────
 
   void _syncProfile() {
     final profile = ref.read(userProfileProvider).valueOrNull;
@@ -112,11 +132,10 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
     ref.read(profileRepositoryProvider).saveProfile(updated);
   }
 
-  // ── Navigation ─────────────────────────────────────────────────────────────
-
   void _nextPage() {
-    _syncProfile(); // persist before advancing
-    if (_currentStep < 5) {
+    HapticFeedback.lightImpact();
+    _syncProfile();
+    if (_currentStep < _totalSteps - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -125,6 +144,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
   }
 
   void _prevPage() {
+    HapticFeedback.lightImpact();
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -133,10 +153,9 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
     }
   }
 
-  // ── Generate ──────────────────────────────────────────────────────────────
-
   Future<void> _generatePlan() async {
-    _syncProfile(); // final sync before generation
+    HapticFeedback.lightImpact();
+    _syncProfile();
     setState(() => _isGenerating = true);
     try {
       final survey = SurveyData(
@@ -176,6 +195,7 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to generate program: $e')),
       );
@@ -183,8 +203,6 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
       if (mounted) setState(() => _isGenerating = false);
     }
   }
-
-  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -194,21 +212,25 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
       return Scaffold(
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 24),
+                CircularProgressIndicator(color: theme.colorScheme.primary),
+                const SizedBox(height: 28),
                 Text(
                   'GymGenie is creating your week...',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Mapping muscle splits, matching equipment parameters, and structuring progressive intensity scales...',
+                Text(
+                  'Mapping muscle splits, matching equipment, and structuring progressive intensity.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -218,9 +240,11 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
       );
     }
 
+    final isLastStep = _currentStep == _totalSteps - 1;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Personalised Workout Generator'),
+        title: const Text('AI Workout Generator'),
         leading: _currentStep > 0
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -228,89 +252,79 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
               )
             : null,
       ),
-      body: Column(
-        children: [
-          // Progress bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LinearProgressIndicator(
-                  value: (_currentStep + 1) / 6,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Step ${_currentStep + 1} of 6',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+              child: StepIndicator(
+                currentStep: _currentStep,
+                totalSteps: _totalSteps,
+              ),
+            ),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (idx) => setState(() => _currentStep = idx),
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildAboutMeStep(theme),
+                  _buildGoalStep(theme),
+                  _buildAvailabilityStep(theme),
+                  _buildLevelStep(theme),
+                  _buildEquipmentStep(theme),
+                  _buildCardioStep(theme),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentStep > 0)
+                    OutlinedButton(
+                      onPressed: _prevPage,
+                      child: const Text('Back'),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  FilledButton(
+                    onPressed: isLastStep ? _generatePlan : _nextPage,
+                    child: Text(
+                        isLastStep ? 'Generate My Week' : 'Continue'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (idx) => setState(() => _currentStep = idx),
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildAboutMeStep(theme),
-                _buildGoalStep(theme),
-                _buildAvailabilityStep(theme),
-                _buildLevelStep(theme),
-                _buildEquipmentStep(theme),
-                _buildCardioStep(theme),
-              ],
-            ),
-          ),
-          // Bottom navigation
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentStep > 0)
-                  OutlinedButton(
-                    onPressed: _prevPage,
-                    child: const Text('Back'),
-                  )
-                else
-                  const SizedBox(),
-                FilledButton(
-                  onPressed: _currentStep == 5 ? _generatePlan : _nextPage,
-                  child: Text(_currentStep == 5 ? 'Generate My Week' : 'Continue'),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // ── Step widgets ──────────────────────────────────────────────────────────
-
   Widget _buildAboutMeStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
         Text(
           'Tell us about yourself',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 4),
         Row(
           children: [
-            const Icon(Icons.sync, size: 14),
-            const SizedBox(width: 4),
-            Text(
-              'Pre-filled from your profile — changes here will sync back.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
+            Icon(Icons.sync, size: 14, color: theme.colorScheme.primary),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Pre-filled from your profile — changes sync back.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
           ],
@@ -319,23 +333,19 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
         Row(
           children: [
             Expanded(
-              child: TextFormField(
+              child: _MetricInput(
+                label: 'Age',
                 controller: _ageController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Age'),
+                suffix: 'years',
                 onChanged: (_) => _syncProfile(),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
-              child: DropdownButtonFormField<String>(
+              child: _DropdownInput(
+                label: 'Gender',
                 value: _gender,
-                decoration: const InputDecoration(labelText: 'Gender'),
-                items: const [
-                  DropdownMenuItem(value: 'Male', child: Text('Male')),
-                  DropdownMenuItem(value: 'Female', child: Text('Female')),
-                  DropdownMenuItem(value: 'Other', child: Text('Other')),
-                ],
+                items: const ['Male', 'Female', 'Other'],
                 onChanged: (val) {
                   setState(() => _gender = val ?? 'Male');
                   _syncProfile();
@@ -348,36 +358,43 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
         Row(
           children: [
             Expanded(
-              child: TextFormField(
+              child: _MetricInput(
+                label: 'Height',
                 controller: _heightController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Height (cm)'),
+                suffix: 'cm',
                 onChanged: (_) => _syncProfile(),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
-              child: TextFormField(
+              child: _MetricInput(
+                label: 'Weight',
                 controller: _weightController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Weight (kg)'),
+                suffix: 'kg',
                 onChanged: (_) => _syncProfile(),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        Text('Fitness Experience', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 32),
+        Text(
+          'Fitness Experience',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 12),
         for (final exp in ['Beginner', 'Intermediate', 'Advanced'])
-          RadioListTile<String>(
-            title: Text(exp),
-            value: exp,
-            groupValue: _experience,
-            onChanged: (val) {
-              setState(() => _experience = val ?? 'Beginner');
-              _syncProfile();
-            },
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SelectableCard(
+              title: exp,
+              selected: _experience == exp,
+              onTap: () {
+                setState(() => _experience = exp);
+                _syncProfile();
+              },
+            ),
           ),
       ],
     );
@@ -385,95 +402,98 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
 
   Widget _buildGoalStep(ThemeData theme) {
     final goals = [
-      {'title': 'Lose weight', 'icon': Icons.trending_down},
-      {'title': 'Build muscle', 'icon': Icons.fitness_center},
-      {'title': 'Strength', 'icon': Icons.bolt},
-      {'title': 'Fat loss + muscle retention', 'icon': Icons.shield},
-      {'title': 'General fitness', 'icon': Icons.favorite_outline},
-      {'title': 'Improve endurance', 'icon': Icons.speed},
+      {'title': 'Lose weight', 'icon': Icons.trending_down, 'desc': 'Calorie-focused plans with cardio'},
+      {'title': 'Build muscle', 'icon': Icons.fitness_center, 'desc': 'Hypertrophy-focused resistance training'},
+      {'title': 'Strength', 'icon': Icons.bolt, 'desc': 'Lower reps, heavier loads'},
+      {'title': 'Fat loss + muscle retention', 'icon': Icons.shield, 'desc': 'Body recomposition approach'},
+      {'title': 'General fitness', 'icon': Icons.favorite_outline, 'desc': 'Balanced mix of strength and cardio'},
+      {'title': 'Improve endurance', 'icon': Icons.speed, 'desc': 'Higher volume cardio and conditioning'},
     ];
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
         Text(
           'What is your main goal?',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const SizedBox(height: 20),
-        for (final g in goals) ...[
-          Card(
-            color: _goal == g['title'] ? theme.colorScheme.primaryContainer : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: _goal == g['title']
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
-            ),
-            child: ListTile(
-              leading: Icon(
-                g['icon'] as IconData,
-                color: _goal == g['title'] ? theme.colorScheme.primary : null,
-              ),
-              title: Text(
-                g['title'] as String,
-                style: TextStyle(
-                  fontWeight: _goal == g['title'] ? FontWeight.bold : null,
-                ),
-              ),
-              trailing: Radio<String>(
-                value: g['title'] as String,
-                groupValue: _goal,
-                onChanged: (val) {
-                  setState(() => _goal = val ?? 'Build Muscle');
-                  _syncProfile();
-                },
-              ),
+        const SizedBox(height: 24),
+        for (final g in goals)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SelectableCard(
+              icon: g['icon'] as IconData,
+              title: g['title'] as String,
+              subtitle: g['desc'] as String,
+              selected: _goal == g['title'],
               onTap: () {
                 setState(() => _goal = g['title'] as String);
                 _syncProfile();
               },
             ),
           ),
-          const SizedBox(height: 8),
-        ],
       ],
     );
   }
 
   Widget _buildAvailabilityStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
         Text(
           'Specify your availability',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 24),
-        Text('How many days per week?', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Slider(
-          value: _daysPerWeek.toDouble(),
-          min: 2,
-          max: 6,
-          divisions: 4,
-          label: '$_daysPerWeek days',
-          onChanged: (val) {
-            setState(() => _daysPerWeek = val.round());
-            _syncProfile();
-          },
-        ),
-        Center(
-          child: Text(
-            '$_daysPerWeek days / week',
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 32),
-        Text('Workout session duration?', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.colorScheme.outline),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Days per week',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Slider(
+                value: _daysPerWeek.toDouble(),
+                min: 2,
+                max: 6,
+                divisions: 4,
+                label: '$_daysPerWeek days',
+                onChanged: (val) {
+                  setState(() => _daysPerWeek = val.round());
+                  _syncProfile();
+                },
+              ),
+              Text(
+                '$_daysPerWeek days',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Session duration',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [30, 45, 60, 90].map((dur) {
             final isSel = _durationMinutes == dur;
@@ -500,69 +520,65 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
 
   Widget _buildLevelStep(ThemeData theme) {
     final intensities = [
-      {'title': 'Easy', 'desc': 'Lower set counts, comfortable rest times.'},
-      {'title': 'Moderate', 'desc': 'Standard set ranges, standard intensity splits.'},
-      {'title': 'Hard', 'desc': 'Maximum set volume, challenging progressive loads.'},
+      {
+        'title': 'Easy',
+        'desc': 'Lower set counts, comfortable rest times.',
+      },
+      {
+        'title': 'Moderate',
+        'desc': 'Standard set ranges, standard intensity splits.',
+      },
+      {
+        'title': 'Hard',
+        'desc': 'Maximum set volume, challenging progressive loads.',
+      },
     ];
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
         Text(
           'Select your workout intensity',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const SizedBox(height: 20),
-        for (final intensity in intensities) ...[
-          Card(
-            color: _level == intensity['title'] ? theme.colorScheme.primaryContainer : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: _level == intensity['title']
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant.withOpacity(0.5),
-              ),
-            ),
-            child: ListTile(
-              title: Text(
-                intensity['title'] as String,
-                style: TextStyle(
-                  fontWeight: _level == intensity['title'] ? FontWeight.bold : null,
-                ),
-              ),
-              subtitle: Text(intensity['desc'] as String),
-              trailing: Radio<String>(
-                value: intensity['title'] as String,
-                groupValue: _level,
-                onChanged: (val) {
-                  setState(() => _level = val ?? 'Moderate');
-                  _syncProfile();
-                },
-              ),
+        const SizedBox(height: 24),
+        for (final intensity in intensities)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SelectableCard(
+              title: intensity['title'] as String,
+              subtitle: intensity['desc'] as String,
+              selected: _level == intensity['title'],
               onTap: () {
                 setState(() => _level = intensity['title'] as String);
                 _syncProfile();
               },
             ),
           ),
-          const SizedBox(height: 8),
-        ],
       ],
     );
   }
 
   Widget _buildEquipmentStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
         Text(
           'Select available equipment',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
-        const Text('GymGenie will build your workout plan using only these options (Bodyweight is always enabled).'),
-        const SizedBox(height: 20),
+        Text(
+          'GymGenie will build your workout plan using only these options (Bodyweight is always enabled).',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 24),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -590,15 +606,22 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
 
   Widget _buildCardioStep(ThemeData theme) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       children: [
         Text(
           'Select available cardio equipment',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
-        const Text('If your goal includes cardio segments, GymGenie will append sessions using these machines.'),
-        const SizedBox(height: 20),
+        Text(
+          'If your goal includes cardio segments, GymGenie will append sessions using these machines.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 24),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -621,6 +644,118 @@ class _GeneratorSurveyScreenState extends ConsumerState<GeneratorSurveyScreen> {
           }).toList(),
         ),
       ],
+    );
+  }
+}
+
+class _MetricInput extends StatelessWidget {
+  const _MetricInput({
+    required this.label,
+    required this.controller,
+    required this.suffix,
+    required this.onChanged,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String suffix;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                  ),
+                  onChanged: onChanged,
+                ),
+              ),
+              Text(
+                suffix,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DropdownInput extends StatelessWidget {
+  const _DropdownInput({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: theme.colorScheme.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: theme.colorScheme.outline),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isDense: true,
+          isExpanded: true,
+          items: items
+              .map((item) => DropdownMenuItem(
+                    value: item,
+                    child: Text(item),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,11 +10,9 @@ import 'package:gymgenie/features/exercises/domain/exercise.dart';
 import 'package:gymgenie/features/plans/data/plan_repository.dart';
 import 'package:gymgenie/features/plans/domain/workout_plan.dart';
 
-/// Creates a new plan ([planId] == null) or edits an existing one.
 class PlanEditorScreen extends ConsumerStatefulWidget {
   const PlanEditorScreen({super.key, this.planId});
 
-  /// null = create mode.
   final String? planId;
 
   @override
@@ -26,10 +25,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
   final _descriptionController = TextEditingController();
 
   List<PlannedExercise> _exercises = [];
-
-  /// Original plan in edit mode (keeps id + createdAt on save).
   WorkoutPlan? _original;
-
   bool _loading = false;
   String? _loadError;
   bool _saving = false;
@@ -116,6 +112,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     final selected = await showModalBottomSheet<Exercise>(
       context: context,
       isScrollControlled: true,
+      showDragHandle: true,
       builder: (_) => const _ExercisePickerSheet(),
     );
     if (selected == null) return;
@@ -151,7 +148,6 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
         if (original == null) {
           throw StateError('Plan not loaded');
         }
-        // Keeps the original id and createdAt; repository stamps updatedAt.
         await repo.updatePlan(
           original.copyWith(
             name: _nameController.text.trim(),
@@ -233,16 +229,36 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Expanded(
                         child: _exercises.isEmpty
                             ? Center(
-                                child: Text(
-                                  'No exercises yet.\nTap "Add Exercise" below.',
-                                  textAlign: TextAlign.center,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.fitness_center_outlined,
+                                      size: 48,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No exercises yet',
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Tap "Add Exercise" below to build your plan.',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                        color: theme
+                                            .colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               )
                             : ReorderableListView.builder(
@@ -264,17 +280,24 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                               ),
                       ),
                       SafeArea(
-                        child: Padding(
+                        child: Container(
                           padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            border: Border(
+                              top: BorderSide(
+                                  color: theme.colorScheme.outline),
+                            ),
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               OutlinedButton.icon(
                                 onPressed: _addExercise,
-                                icon: const Icon(Icons.add),
+                                icon: const Icon(Icons.add_rounded),
                                 label: const Text('Add Exercise'),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 10),
                               FilledButton(
                                 onPressed: _saving ? null : _save,
                                 child: _saving
@@ -282,7 +305,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
                                         height: 20,
                                         width: 20,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2),
+                                            strokeWidth: 2, color: Colors.black),
                                       )
                                     : const Text('Save Plan'),
                               ),
@@ -297,7 +320,6 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
   }
 }
 
-/// Expansion tile editing a single [PlannedExercise]'s targets.
 class _PlannedExerciseCard extends StatelessWidget {
   const _PlannedExerciseCard({
     super.key,
@@ -315,15 +337,46 @@ class _PlannedExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       child: ExpansionTile(
-        title: Text(exercise.exerciseName),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.drag_handle,
+              color: theme.colorScheme.primary,
+              size: 20,
+            ),
+          ),
+        ),
+        title: Text(
+          exercise.exerciseName,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         subtitle: Text(
           '${exercise.targetSets} sets × ${exercise.targetReps} reps'
           '${exercise.targetWeight > 0 ? ' @ ${_formatWeight(exercise.targetWeight)} kg' : ''}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         children: [
           _StepperRow(
             label: 'Sets',
@@ -358,12 +411,17 @@ class _PlannedExerciseCard extends StatelessWidget {
             onIncrement: () => onChanged(exercise.copyWith(
                 targetWeight: exercise.targetWeight + 2.5)),
           ),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               onPressed: onRemove,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Remove'),
+              icon: Icon(Icons.delete_outline,
+                  color: theme.colorScheme.error, size: 18),
+              label: Text(
+                'Remove',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ),
           ),
         ],
@@ -387,26 +445,44 @@ class _StepperRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Expanded(child: Text(label)),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
           IconButton(
             onPressed: onDecrement,
-            icon: const Icon(Icons.remove_circle_outline),
+            icon: Icon(
+              Icons.remove_circle_outline,
+              color: onDecrement != null
+                  ? theme.colorScheme.onSurfaceVariant
+                  : theme.colorScheme.surfaceContainerHighest,
+            ),
           ),
           SizedBox(
-            width: 48,
+            width: 56,
             child: Text(
               value,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           IconButton(
             onPressed: onIncrement,
-            icon: const Icon(Icons.add_circle_outline),
+            icon: Icon(
+              Icons.add_circle_outline,
+              color: theme.colorScheme.primary,
+            ),
           ),
         ],
       ),
@@ -414,8 +490,6 @@ class _StepperRow extends StatelessWidget {
   }
 }
 
-/// Modal bottom sheet for picking an exercise from the library,
-/// with name search and muscle-group filter chips.
 class _ExercisePickerSheet extends ConsumerStatefulWidget {
   const _ExercisePickerSheet();
 
@@ -438,6 +512,7 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final library = ref.watch(exerciseLibraryProvider);
+    final theme = Theme.of(context);
     final query = _query.trim().toLowerCase();
 
     return FractionallySizedBox(
@@ -510,12 +585,36 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final exercise = filtered[index];
-                    return ListTile(
-                      title: Text(exercise.name),
-                      subtitle: Text(
-                        '${exercise.muscleGroup} • ${exercise.equipment}',
+                    return Card(
+                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.fitness_center,
+                            color: theme.colorScheme.primary,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          exercise.name,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${exercise.muscleGroup} • ${exercise.equipment}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        onTap: () => Navigator.of(context).pop(exercise),
                       ),
-                      onTap: () => Navigator.of(context).pop(exercise),
                     );
                   },
                 );

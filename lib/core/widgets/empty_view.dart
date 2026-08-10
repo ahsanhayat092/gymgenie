@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Centered empty state with an icon, title, subtitle and an optional
-/// action widget (e.g. a call-to-action button).
+/// Premium empty state with a large gradient icon, title, subtitle and an
+/// optional call-to-action.
 class EmptyView extends StatelessWidget {
   const EmptyView({
     super.key,
@@ -21,19 +21,39 @@ class EmptyView extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 56,
-              color: theme.colorScheme.onSurfaceVariant,
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary.withValues(alpha: 0.25),
+                    theme.colorScheme.primary.withValues(alpha: 0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 40,
+                color: theme.colorScheme.primary,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
               title,
-              style: theme.textTheme.titleMedium,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -45,7 +65,7 @@ class EmptyView extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (action != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               action!,
             ],
           ],

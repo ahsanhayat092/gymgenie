@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,7 +31,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   void initState() {
     super.initState();
-    // Rebuild every 30s so the elapsed-time label stays fresh.
     _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
@@ -50,7 +50,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Leave workout?'),
         content: const Text(
-            'Your active workout is not saved yet. Discard it and leave?'),
+          'Your active workout is not saved yet. Discard it and leave?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -67,95 +68,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Future<void> _finishWorkout() async {
-    final notesController = TextEditingController();
-    String selectedDifficulty = 'Moderate';
-    int selectedEnergy = 3;
-    String selectedPain = 'None';
-
-    final result = await showDialog<Map<String, dynamic>>(
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Finish workout'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: notesController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes (optional)',
-                        hintText: 'How did it go?',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('How was today\'s workout?', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: selectedDifficulty,
-                      items: const [
-                        DropdownMenuItem(value: 'Very Easy', child: Text('😎 Very Easy')),
-                        DropdownMenuItem(value: 'Easy', child: Text('🙂 Easy')),
-                        DropdownMenuItem(value: 'Moderate', child: Text('😐 Moderate')),
-                        DropdownMenuItem(value: 'Hard', child: Text('🥵 Hard')),
-                        DropdownMenuItem(value: 'Very Hard', child: Text('💀 Very Hard')),
-                      ],
-                      onChanged: (val) => setState(() => selectedDifficulty = val ?? 'Moderate'),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('How was your energy? (1-5)', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Slider(
-                      value: selectedEnergy.toDouble(),
-                      min: 1,
-                      max: 5,
-                      divisions: 4,
-                      label: '$selectedEnergy',
-                      onChanged: (val) => setState(() => selectedEnergy = val.round()),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Any muscle pain / joint discomfort?', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: selectedPain,
-                      items: const [
-                        DropdownMenuItem(value: 'None', child: Text('None')),
-                        DropdownMenuItem(value: 'Mild', child: Text('Mild')),
-                        DropdownMenuItem(value: 'Moderate', child: Text('Moderate')),
-                        DropdownMenuItem(value: 'Severe', child: Text('Severe')),
-                      ],
-                      onChanged: (val) => setState(() => selectedPain = val ?? 'None'),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(null),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop({
-                      'notes': notesController.text.trim(),
-                      'difficulty': selectedDifficulty,
-                      'energy': selectedEnergy,
-                      'pain': selectedPain,
-                    });
-                  },
-                  child: const Text('Finish'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => const _FinishWorkoutSheet(),
     );
 
-    notesController.dispose();
     if (result == null || !mounted) return;
 
     setState(() => _finishing = true);
@@ -173,14 +92,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             userWeightKg: userWeightKg,
           );
       if (!mounted) return;
-      
-      // Post workout log to Strava-style community feed.
-      // This is best-effort: the workout is already saved, so we still
-      // navigate to the summary even if the feed write fails.
+
       try {
         await ref.read(socialRepositoryProvider).postToFeed(savedLog, profile);
       } catch (e) {
-        // Silently ignore feed errors so the user isn't blocked after finishing.
         debugPrint('Failed to post workout to social feed: $e');
       }
 
@@ -227,6 +142,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       builder: (sheetContext) {
         return _ExercisePickerSheet(
           onSelected: (Exercise exercise) {
+            HapticFeedback.lightImpact();
             ref.read(activeWorkoutProvider.notifier).addExercise(exercise);
             Navigator.of(sheetContext).pop();
           },
@@ -253,11 +169,20 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(workout?.planName ?? 'Workout'),
+          title: workout == null
+              ? const Text('Workout')
+              : _ElapsedTimer(workout: workout),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
           actions: [
             if (workout != null)
               TextButton(
                 onPressed: _discardWorkout,
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
                 child: const Text('Discard'),
               ),
           ],
@@ -288,16 +213,19 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             ? null
             : SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: FilledButton.icon(
                     onPressed: _finishing ? null : _finishWorkout,
                     icon: _finishing
                         ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
                           )
-                        : const Icon(Icons.check),
+                        : const Icon(Icons.check_rounded),
                     label: const Text('Finish Workout'),
                   ),
                 ),
@@ -307,22 +235,24 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Widget _buildWorkoutBody(
-      BuildContext context, ActiveWorkoutState workout, ThemeData theme, bool restActive) {
+    BuildContext context,
+    ActiveWorkoutState workout,
+    ThemeData theme,
+    bool restActive,
+  ) {
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, restActive ? 140 : 24),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, restActive ? 160 : 24),
       children: [
-        Row(
-          children: [
-            Icon(Icons.timer_outlined,
-                size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              '${workout.elapsedMinutes} min elapsed',
-              style: theme.textTheme.titleMedium,
+        if (workout.planName.isNotEmpty && workout.planName != 'Quick Workout')
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              workout.planName,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
+          ),
         for (var i = 0; i < workout.exercises.length; i++)
           _ExerciseCard(
             index: i,
@@ -331,35 +261,79 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _showExercisePicker,
-          icon: const Icon(Icons.add),
+          icon: const Icon(Icons.add_rounded),
           label: const Text('Add Exercise'),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _ElapsedTimer extends StatelessWidget {
+  const _ElapsedTimer({required this.workout});
+
+  final ActiveWorkoutState workout;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.secondary,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.5),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '${workout.elapsedMinutes} min',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
         ),
       ],
     );
   }
 }
 
-class _ExerciseCard extends ConsumerWidget {
+class _ExerciseCard extends ConsumerStatefulWidget {
   const _ExerciseCard({required this.index, required this.exercise});
 
   final int index;
   final ExerciseLog exercise;
 
-  void _showSubstitutionPicker(
-    BuildContext context,
-    WidgetRef ref,
-    int index,
-    ExerciseLog log,
-  ) {
+  @override
+  ConsumerState<_ExerciseCard> createState() => _ExerciseCardState();
+}
+
+class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
+  bool _expanded = true;
+
+  void _showSubstitutionPicker() {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
         return _SubstitutionSheet(
-          exerciseLog: log,
+          exerciseLog: widget.exercise,
           onSelected: (Exercise newExercise) {
-            ref.read(activeWorkoutProvider.notifier).substituteExercise(index, newExercise);
+            HapticFeedback.lightImpact();
+            ref
+                .read(activeWorkoutProvider.notifier)
+                .substituteExercise(widget.index, newExercise);
             Navigator.of(sheetContext).pop();
           },
         );
@@ -368,174 +342,191 @@ class _ExerciseCard extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final notifier = ref.read(activeWorkoutProvider.notifier);
-    // Cardio exercises are seeded without sets — use that as the reliable signal.
-    final isCardio = exercise.sets.isEmpty;
+    final isCardio = widget.exercise.sets.isEmpty;
+    final completedSets =
+        widget.exercise.sets.where((s) => s.completed).length;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    exercise.exerciseName,
-                    style: theme.textTheme.titleMedium,
-                  ),
+            InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isCardio ? Icons.directions_run : Icons.fitness_center,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.exercise.exerciseName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          if (!isCardio)
+                            Text(
+                              '$completedSets of ${widget.exercise.sets.length} sets done',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    _PopupMenu(
+                      onSubstitute: _showSubstitutionPicker,
+                      onRemove: () {
+                        HapticFeedback.lightImpact();
+                        notifier.removeExercise(widget.index);
+                      },
+                    ),
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      child: Icon(
+                        Icons.expand_more,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-                TextButton.icon(
-                  onPressed: () => _showSubstitutionPicker(context, ref, index, exercise),
-                  icon: const Icon(Icons.swap_horiz, size: 16),
-                  label: const Text('Substitute'),
-                ),
-                IconButton(
-                  tooltip: 'Remove exercise',
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => notifier.removeExercise(index),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 8),
-            if (isCardio) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: exercise.durationMinutes == null || exercise.durationMinutes == 0
-                          ? ''
-                          : '${exercise.durationMinutes!.round()}',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Duration (min)',
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val.trim());
-                        notifier.updateCardio(index, durationMinutes: parsed ?? 0.0);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: exercise.distanceKm == null || exercise.distanceKm == 0
-                          ? ''
-                          : '${exercise.distanceKm}',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Distance (km)',
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val.trim());
-                        notifier.updateCardio(index, distanceKm: parsed ?? 0.0);
-                      },
-                    ),
-                  ),
-                ],
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 250),
+              crossFadeState: _expanded
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: isCardio
+                    ? _CardioMetrics(index: widget.index, exercise: widget.exercise)
+                    : _StrengthSets(index: widget.index, exercise: widget.exercise),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: exercise.speedKmh == null || exercise.speedKmh == 0
-                          ? ''
-                          : '${exercise.speedKmh}',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Speed (km/h)',
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val.trim());
-                        notifier.updateCardio(index, speedKmh: parsed ?? 0.0);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: exercise.inclinePct == null && exercise.resistanceLevel == null
-                          ? ''
-                          : '${exercise.inclinePct ?? exercise.resistanceLevel ?? ''}',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: exercise.exerciseName.contains('Bike') || exercise.exerciseName.contains('Rowing')
-                            ? 'Resistance Lvl'
-                            : 'Incline (%)',
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val.trim());
-                        if (exercise.exerciseName.contains('Bike') || exercise.exerciseName.contains('Rowing')) {
-                          notifier.updateCardio(index, resistanceLevel: parsed ?? 0.0);
-                        } else {
-                          notifier.updateCardio(index, inclinePct: parsed ?? 0.0);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: exercise.caloriesBurned == null || exercise.caloriesBurned == 0
-                          ? ''
-                          : '${exercise.caloriesBurned!.round()}',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Est. Calories (kcal)',
-                        isDense: true,
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val.trim());
-                        notifier.updateCardio(index, caloriesBurned: parsed ?? 0.0);
-                      },
-                    ),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            ] else ...[
-              Row(
-                children: [
-                  _HeaderCell('SET', flex: 1),
-                  _HeaderCell('REPS', flex: 2),
-                  _HeaderCell('KG', flex: 2),
-                  _HeaderCell('DONE', flex: 1),
-                  const SizedBox(width: 40),
-                ],
-              ),
-              for (var s = 0; s < exercise.sets.length; s++)
-                _SetRow(
-                  exerciseIndex: index,
-                  setIndex: s,
-                  set: exercise.sets[s],
-                ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => notifier.addSet(index),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add set'),
-                ),
-              ),
-            ],
+              secondChild: const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PopupMenu extends StatelessWidget {
+  const _PopupMenu({required this.onSubstitute, required this.onRemove});
+
+  final VoidCallback onSubstitute;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_vert,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'substitute',
+          onTap: onSubstitute,
+          child: Row(
+            children: [
+              Icon(Icons.swap_horiz, color: theme.colorScheme.primary, size: 20),
+              const SizedBox(width: 12),
+              const Text('Substitute'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'remove',
+          onTap: onRemove,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, color: theme.colorScheme.error, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                'Remove',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StrengthSets extends ConsumerWidget {
+  const _StrengthSets({required this.index, required this.exercise});
+
+  final int index;
+  final ExerciseLog exercise;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final notifier = ref.read(activeWorkoutProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              _HeaderCell('SET', flex: 1),
+              _HeaderCell('REPS', flex: 2),
+              _HeaderCell('KG', flex: 2),
+              _HeaderCell('DONE', flex: 1),
+              SizedBox(width: 44),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        for (var s = 0; s < exercise.sets.length; s++)
+          _SetRow(
+            exerciseIndex: index,
+            setIndex: s,
+            set: exercise.sets[s],
+          ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            notifier.addSet(index);
+          },
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text('Add set'),
+        ),
+      ],
     );
   }
 }
@@ -553,7 +544,9 @@ class _HeaderCell extends StatelessWidget {
       child: Center(
         child: Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
         ),
       ),
     );
@@ -577,112 +570,353 @@ class _SetRow extends ConsumerWidget {
     final notifier = ref.read(activeWorkoutProvider.notifier);
     final done = set.completed;
 
-    return Opacity(
-      opacity: done ? 0.65 : 1.0,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        decoration: BoxDecoration(
-          color: done
-              ? theme.colorScheme.primary.withOpacity(0.08)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: done
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: done
+            ? Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              )
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: Text(
+                '${set.setNumber}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: done ? theme.colorScheme.primary : null,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _NumberField(
+                key: ValueKey('reps-$exerciseIndex-$setIndex-${set.reps}'),
+                value: set.reps,
+                hint: '0',
+                onChanged: (reps) {
+                  final parsed = int.tryParse(reps ?? '');
+                  if (parsed != null) {
+                    notifier.updateSet(exerciseIndex, setIndex, reps: parsed);
+                  }
+                },
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _NumberField(
+                key: ValueKey('weight-$exerciseIndex-$setIndex'),
+                value: set.weight == 0 ? null : set.weight.toString(),
+                hint: '0.0',
+                allowDecimal: true,
+                onChanged: (value) {
+                  final weight = double.tryParse(value ?? '');
+                  if (weight != null) {
+                    notifier.updateSet(exerciseIndex, setIndex, weight: weight);
+                  }
+                },
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  final nextState = !done;
+                  notifier.updateSet(
+                    exerciseIndex,
+                    setIndex,
+                    completed: nextState,
+                  );
+                  if (nextState) {
+                    final profile =
+                        ref.read(userProfileProvider).valueOrNull;
+                    if (profile != null && profile.restTimerEnabled) {
+                      ref
+                          .read(restTimerProvider.notifier)
+                          .start(profile.restTimerDuration);
+                    }
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: done
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
+                    border: done
+                        ? null
+                        : Border.all(
+                            color: theme.colorScheme.outlineVariant,
+                          ),
+                  ),
+                  child: Icon(
+                    Icons.check,
+                    size: 18,
+                    color: done ? Colors.black : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 44,
+            child: IconButton(
+              tooltip: 'Remove set',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                Icons.close,
+                size: 18,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              onPressed: () => notifier.removeSet(exerciseIndex, setIndex),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NumberField extends StatelessWidget {
+  const _NumberField({
+    super.key,
+    required this.value,
+    required this.hint,
+    required this.onChanged,
+    this.allowDecimal = false,
+  });
+
+  final dynamic value;
+  final String hint;
+  final ValueChanged<String?> onChanged;
+  final bool allowDecimal;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final initial = value is int
+        ? (value == 0 ? '' : '$value')
+        : (value is String ? value : '');
+
+    return TextFormField(
+      initialValue: initial,
+      keyboardType: allowDecimal
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.number,
+      textAlign: TextAlign.center,
+      style: theme.textTheme.bodyLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
+      decoration: InputDecoration(
+        isDense: true,
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+        hintText: hint,
+        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
         ),
-        child: Row(
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _CardioMetrics extends ConsumerWidget {
+  const _CardioMetrics({required this.index, required this.exercise});
+
+  final int index;
+  final ExerciseLog exercise;
+
+  String? _formatValue(num? value) {
+    if (value == null || value == 0) return null;
+    return '$value';
+  }
+
+  String _inclineLabel() {
+    if (exercise.exerciseName.contains('Bike') ||
+        exercise.exerciseName.contains('Rowing')) {
+      return 'Resistance';
+    }
+    return 'Incline %';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(activeWorkoutProvider.notifier);
+
+    return Column(
+      children: [
+        Row(
           children: [
             Expanded(
-              flex: 1,
-              child: Center(
-                child: Text(
-                  '${set.setNumber}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: done ? theme.colorScheme.primary : null,
-                  ),
-                ),
+              child: _MetricField(
+                label: 'Duration',
+                unit: 'min',
+                value: _formatValue(exercise.durationMinutes?.round()),
+                onChanged: (val) {
+                  final parsed = double.tryParse(val ?? '');
+                  notifier.updateCardio(
+                    index,
+                    durationMinutes: parsed ?? 0.0,
+                  );
+                },
               ),
             ),
+            const SizedBox(width: 12),
             Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: TextFormField(
-                  key: ValueKey('reps-$exerciseIndex-$setIndex-${set.reps}'),
-                  initialValue: set.reps == 0 ? '' : '${set.reps}',
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    hintText: '0',
-                  ),
-                  onChanged: (value) {
-                    final reps = int.tryParse(value.trim());
-                    if (reps != null) {
-                      notifier.updateSet(exerciseIndex, setIndex, reps: reps);
-                    }
-                  },
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: TextFormField(
-                  key: ValueKey('weight-$exerciseIndex-$setIndex'),
-                  initialValue: set.weight == 0 ? '' : '${set.weight}',
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    hintText: '0.0',
-                  ),
-                  onChanged: (value) {
-                    final weight = double.tryParse(value.trim());
-                    if (weight != null) {
-                      notifier.updateSet(exerciseIndex, setIndex,
-                          weight: weight);
-                    }
-                  },
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Center(
-                child: IconButton(
-                  tooltip: done ? 'Mark as not done' : 'Mark as done',
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                    done ? Icons.check_circle : Icons.circle_outlined,
-                    color: done ? theme.colorScheme.primary : null,
-                  ),
-                  onPressed: () {
-                    final nextState = !done;
-                    notifier.updateSet(exerciseIndex, setIndex, completed: nextState);
-                    if (nextState) {
-                      final profile = ref.read(userProfileProvider).valueOrNull;
-                      if (profile != null && profile.restTimerEnabled) {
-                        ref.read(restTimerProvider.notifier).start(profile.restTimerDuration);
-                      }
-                    }
-                  },
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 40,
-              child: IconButton(
-                tooltip: 'Remove set',
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () =>
-                    notifier.removeSet(exerciseIndex, setIndex),
+              child: _MetricField(
+                label: 'Distance',
+                unit: 'km',
+                value: _formatValue(exercise.distanceKm),
+                onChanged: (val) {
+                  final parsed = double.tryParse(val ?? '');
+                  notifier.updateCardio(index, distanceKm: parsed ?? 0.0);
+                },
               ),
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricField(
+                label: 'Speed',
+                unit: 'km/h',
+                value: _formatValue(exercise.speedKmh),
+                onChanged: (val) {
+                  final parsed = double.tryParse(val ?? '');
+                  notifier.updateCardio(index, speedKmh: parsed ?? 0.0);
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MetricField(
+                label: _inclineLabel(),
+                unit: '',
+                value: _formatValue(
+                    exercise.inclinePct ?? exercise.resistanceLevel),
+                onChanged: (val) {
+                  final parsed = double.tryParse(val ?? '');
+                  if (exercise.exerciseName.contains('Bike') ||
+                      exercise.exerciseName.contains('Rowing')) {
+                    notifier.updateCardio(
+                        index, resistanceLevel: parsed ?? 0.0);
+                  } else {
+                    notifier.updateCardio(index, inclinePct: parsed ?? 0.0);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _MetricField(
+          label: 'Estimated calories',
+          unit: 'kcal',
+          value: _formatValue(exercise.caloriesBurned?.round()),
+          onChanged: (val) {
+            final parsed = double.tryParse(val ?? '');
+            notifier.updateCardio(index, caloriesBurned: parsed ?? 0.0);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricField extends StatelessWidget {
+  const _MetricField({
+    required this.label,
+    required this.unit,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String unit;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  initialValue: value,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                    hintText: '0',
+                  ),
+                  onChanged: onChanged,
+                ),
+              ),
+              if (unit.isNotEmpty)
+                Text(
+                  unit,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -704,17 +938,18 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final library = ref.watch(exerciseLibraryProvider);
+    final theme = Theme.of(context);
 
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.7,
+      initialChildSize: 0.75,
       minChildSize: 0.4,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: TextField(
                 autofocus: true,
                 decoration: const InputDecoration(
@@ -731,22 +966,56 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                   final filtered = _query.isEmpty
                       ? exercises
                       : exercises
-                          .where(
-                              (e) => e.name.toLowerCase().contains(_query))
+                          .where((e) =>
+                              e.name.toLowerCase().contains(_query))
                           .toList();
                   if (filtered.isEmpty) {
-                    return const Center(child: Text('No exercises found'));
+                    return const EmptyView(
+                      icon: Icons.search_off,
+                      title: 'No exercises found',
+                      subtitle: 'Try a different search term.',
+                    );
                   }
                   return ListView.builder(
                     controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: filtered.length,
                     itemBuilder: (context, i) {
                       final exercise = filtered[i];
-                      return ListTile(
-                        title: Text(exercise.name),
-                        subtitle: Text(
-                            '${exercise.muscleGroup} • ${exercise.equipment}'),
-                        onTap: () => widget.onSelected(exercise),
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.fitness_center,
+                              color: theme.colorScheme.primary,
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(
+                            exercise.name,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${exercise.muscleGroup} • ${exercise.equipment}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          trailing: Icon(
+                            Icons.add_circle_outline,
+                            color: theme.colorScheme.primary,
+                          ),
+                          onTap: () => widget.onSelected(exercise),
+                        ),
                       );
                     },
                   );
@@ -780,26 +1049,53 @@ class _RestTimerOverlay extends ConsumerWidget {
         ? state.remainingSeconds / state.totalSeconds
         : 0.0;
 
-    return Card(
-      elevation: 6,
-      shadowColor: Colors.black45,
-      color: theme.colorScheme.surfaceContainerHigh,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2), width: 1.5),
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.snooze,
-                  color: theme.colorScheme.primary,
+                SizedBox(
+                  width: 52,
+                  height: 52,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 5,
+                        backgroundColor:
+                            theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.primary,
+                        ),
+                      ),
+                      Center(
+                        child: Icon(
+                          Icons.timer,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -808,52 +1104,49 @@ class _RestTimerOverlay extends ConsumerWidget {
                         'Rest Period',
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         _formatTime(state.remainingSeconds),
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
                           color: theme.colorScheme.primary,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ],
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () {
-                    ref.read(restTimerProvider.notifier).addTime(30);
-                  },
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('+30s'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.tonal(
-                  onPressed: () {
-                    ref.read(restTimerProvider.notifier).skip();
-                  },
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  child: const Text('Skip'),
+                Row(
+                  children: [
+                    FilledButton.tonal(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(restTimerProvider.notifier).addTime(30);
+                      },
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      child: const Text('+30s'),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(restTimerProvider.notifier).skip();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      child: const Text('Skip'),
+                    ),
+                  ],
                 ),
               ],
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
-              ),
             ),
           ],
         ),
@@ -872,7 +1165,8 @@ class _SubstitutionSheet extends ConsumerStatefulWidget {
   final ValueChanged<Exercise> onSelected;
 
   @override
-  ConsumerState<_SubstitutionSheet> createState() => _SubstitutionSheetState();
+  ConsumerState<_SubstitutionSheet> createState() =>
+      _SubstitutionSheetState();
 }
 
 class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
@@ -906,24 +1200,33 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
               children: [
                 Text(
                   'Why substitute this exercise?',
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                Text('GymGenie will use this reason to tailor alternative exercise suggestions.'),
+                Text(
+                  'GymGenie will use this reason to tailor alternative exercise suggestions.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: 24),
                 Expanded(
-                  child: ListView.builder(
+                  child: ListView.separated(
                     controller: scrollController,
                     itemCount: _reasons.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, idx) {
                       final reason = _reasons[idx];
-                      return RadioListTile<String>(
-                        title: Text(reason),
-                        value: reason,
-                        groupValue: _selectedReason,
-                        onChanged: (val) {
+                      final selected = _selectedReason == reason;
+                      return _SelectableReasonTile(
+                        reason: reason,
+                        selected: selected,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
                           setState(() {
-                            _selectedReason = val;
+                            _selectedReason = reason;
                             _showAlternatives = true;
                           });
                         },
@@ -937,8 +1240,8 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
         }
 
         return libraryAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('Error loading exercises: $err')),
+          loading: () => const LoadingView(),
+          error: (err, _) => ErrorView(message: 'Error loading exercises: $err'),
           data: (library) {
             final original = library.firstWhere(
               (ex) => ex.name == widget.exerciseLog.exerciseName,
@@ -950,16 +1253,28 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
               return ex.muscleGroup == original.muscleGroup;
             }).toList();
 
-            if (_selectedReason == 'Equipment unavailable' || _selectedReason == 'Gym is crowded') {
+            if (_selectedReason == 'Equipment unavailable' ||
+                _selectedReason == 'Gym is crowded') {
               alternatives.sort((a, b) {
-                final aScore = (a.equipment.toLowerCase() == 'bodyweight' || a.equipment.toLowerCase() == 'dumbbell') ? 1 : 0;
-                final bScore = (b.equipment.toLowerCase() == 'bodyweight' || b.equipment.toLowerCase() == 'dumbbell') ? 1 : 0;
+                final aScore = (a.equipment.toLowerCase() == 'bodyweight' ||
+                        a.equipment.toLowerCase() == 'dumbbell')
+                    ? 1
+                    : 0;
+                final bScore = (b.equipment.toLowerCase() == 'bodyweight' ||
+                        b.equipment.toLowerCase() == 'dumbbell')
+                    ? 1
+                    : 0;
                 return bScore.compareTo(aScore);
               });
-            } else if (_selectedReason == 'Too difficult' || _selectedReason == 'Pain/discomfort') {
+            } else if (_selectedReason == 'Too difficult' ||
+                _selectedReason == 'Pain/discomfort') {
               alternatives.sort((a, b) {
-                final aScore = a.difficulty.toLowerCase() == 'beginner' ? 2 : (a.difficulty.toLowerCase() == 'intermediate' ? 1 : 0);
-                final bScore = b.difficulty.toLowerCase() == 'beginner' ? 2 : (b.difficulty.toLowerCase() == 'intermediate' ? 1 : 0);
+                final aScore = a.difficulty.toLowerCase() == 'beginner'
+                    ? 2
+                    : (a.difficulty.toLowerCase() == 'intermediate' ? 1 : 0);
+                final bScore = b.difficulty.toLowerCase() == 'beginner'
+                    ? 2
+                    : (b.difficulty.toLowerCase() == 'intermediate' ? 1 : 0);
                 return bScore.compareTo(aScore);
               });
             }
@@ -967,14 +1282,23 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      'Recommended Alternatives',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Recommended Alternatives',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Based on: $_selectedReason',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Expanded(
                     child: ListView.builder(
                       controller: scrollController,
@@ -984,9 +1308,35 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            title: Text(ex.name),
-                            subtitle: Text('${ex.muscleGroup} • ${ex.equipment} • ${ex.difficulty}'),
-                            trailing: const Icon(Icons.swap_horiz),
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.fitness_center,
+                                color: theme.colorScheme.primary,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              ex.name,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${ex.muscleGroup} • ${ex.equipment} • ${ex.difficulty}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            trailing: Icon(
+                              Icons.swap_horiz,
+                              color: theme.colorScheme.primary,
+                            ),
                             onTap: () => widget.onSelected(ex),
                           ),
                         );
@@ -999,6 +1349,269 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
           },
         );
       },
+    );
+  }
+}
+
+class _SelectableReasonTile extends StatelessWidget {
+  const _SelectableReasonTile({
+    required this.reason,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String reason;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: selected ? theme.colorScheme.primaryContainer : null,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                reason,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            if (selected)
+              Icon(
+                Icons.check_circle,
+                color: theme.colorScheme.primary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FinishWorkoutSheet extends StatefulWidget {
+  const _FinishWorkoutSheet();
+
+  @override
+  State<_FinishWorkoutSheet> createState() => _FinishWorkoutSheetState();
+}
+
+class _FinishWorkoutSheetState extends State<_FinishWorkoutSheet> {
+  final _notesController = TextEditingController();
+  String _difficulty = 'Moderate';
+  int _energy = 3;
+  String _pain = 'None';
+
+  final List<String> _difficulties = [
+    'Very Easy',
+    'Easy',
+    'Moderate',
+    'Hard',
+    'Very Hard',
+  ];
+
+  final List<String> _pains = ['None', 'Mild', 'Moderate', 'Severe'];
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Finish workout',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Log how the session felt. This helps GymGenie adapt future plans.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    children: [
+                      Text(
+                        'Difficulty',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _difficulties.map((d) {
+                          final selected = _difficulty == d;
+                          return ChoiceChip(
+                            label: Text(d),
+                            selected: selected,
+                            onSelected: (_) {
+                              HapticFeedback.lightImpact();
+                              setState(() => _difficulty = d);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Energy level',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(5, (i) {
+                          final value = i + 1;
+                          final selected = _energy == value;
+                          return GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              setState(() => _energy = value);
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: selected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.surfaceContainerHighest,
+                                border: selected
+                                    ? null
+                                    : Border.all(
+                                        color: theme.colorScheme.outline,
+                                      ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$value',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: selected
+                                        ? Colors.black
+                                        : theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Pain or discomfort',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _pains.map((p) {
+                          final selected = _pain == p;
+                          return ChoiceChip(
+                            label: Text(p),
+                            selected: selected,
+                            onSelected: (_) {
+                              HapticFeedback.lightImpact();
+                              setState(() => _pain = p);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Notes',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _notesController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          hintText: 'How did it go?',
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop({
+                      'notes': _notesController.text.trim(),
+                      'difficulty': _difficulty,
+                      'energy': _energy,
+                      'pain': _pain,
+                    });
+                  },
+                  child: const Text('Save Workout'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

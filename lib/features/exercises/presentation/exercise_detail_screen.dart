@@ -1,12 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gymgenie/features/exercises/domain/exercise.dart';
 import 'package:gymgenie/features/exercises/presentation/exercise_progression_chart.dart';
 import 'package:gymgenie/features/workout/application/active_workout_controller.dart';
 
-/// Detail view for a single [Exercise], passed via go_router `extra`.
 class ExerciseDetailScreen extends ConsumerWidget {
   const ExerciseDetailScreen({super.key, required this.exercise});
 
@@ -19,88 +19,167 @@ class ExerciseDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(exercise.name)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Stack(
         children: [
-          if (exercise.gifUrl.isNotEmpty) ...[
-            Card(
-              clipBehavior: Clip.antiAlias,
-              margin: const EdgeInsets.only(bottom: 20),
-              color: Colors.white, // Match white background of raw GIF assets
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.dividerColor.withOpacity(0.08)),
-              ),
-              child: SizedBox(
-                height: 220,
-                width: double.infinity,
-                child: CachedNetworkImage(
-                  imageUrl: exercise.gifUrl,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  errorWidget: (context, url, error) => Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.broken_image_outlined,
-                            size: 40, color: theme.colorScheme.error),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Preview unavailable',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+          CustomScrollView(
+            slivers: [
+              if (exercise.gifUrl.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                    height: 240,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C1C1E),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: theme.colorScheme.outline),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: CachedNetworkImage(
+                        imageUrl: exercise.gifUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Center(
+                          child: CircularProgressIndicator(
+                            color: theme.colorScheme.primary,
                           ),
                         ),
-                      ],
+                        errorWidget: (context, url, error) => Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image_outlined,
+                                size: 48,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Preview unavailable',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-          Text(exercise.name, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Chip(
-                avatar: const Icon(Icons.fitness_center, size: 18),
-                label: Text(exercise.muscleGroup),
-              ),
-              Chip(
-                avatar: const Icon(Icons.handyman_outlined, size: 18),
-                label: Text(exercise.equipment),
-              ),
-              Chip(
-                avatar: const Icon(Icons.signal_cellular_alt, size: 18),
-                label: Text(exercise.difficulty),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exercise.name,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _InfoPill(
+                            icon: Icons.fitness_center,
+                            label: exercise.muscleGroup,
+                          ),
+                          _InfoPill(
+                            icon: Icons.handyman_outlined,
+                            label: exercise.equipment,
+                          ),
+                          _InfoPill(
+                            icon: Icons.signal_cellular_alt,
+                            label: exercise.difficulty,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        'Instructions',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: theme.colorScheme.outline),
+                        ),
+                        child: Text(
+                          exercise.instructions,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            height: 1.6,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      ExerciseProgressionChart(exercise: exercise),
+                      const SizedBox(height: 120),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Text('Instructions', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(exercise.instructions, style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 24),
-          ExerciseProgressionChart(exercise: exercise),
-          const SizedBox(height: 24),
           if (activeWorkout != null)
-            FilledButton.icon(
-              onPressed: () {
-                ref
-                    .read(activeWorkoutProvider.notifier)
-                    .addExercise(exercise);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Added to workout')),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add to current workout'),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: FilledButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  ref.read(activeWorkoutProvider.notifier).addExercise(exercise);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Added to workout')),
+                  );
+                },
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add to current workout'),
+              ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

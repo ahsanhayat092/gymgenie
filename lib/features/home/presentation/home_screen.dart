@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gymgenie/core/utils/formatters.dart';
 import 'package:gymgenie/core/widgets/error_view.dart';
-import 'package:gymgenie/core/widgets/loading_view.dart';
 import 'package:gymgenie/features/profile/data/profile_repository.dart';
 import 'package:gymgenie/features/workout/application/active_workout_controller.dart';
 import 'package:gymgenie/features/workout/data/log_repository.dart';
@@ -53,12 +53,12 @@ class HomeScreen extends ConsumerWidget {
   }
 
   static String _weightChangeText(List<BodyWeightEntry> weights) {
-    if (weights.length < 2) return '-- kg';
+    if (weights.length < 2) return '--';
     final latest = weights.last;
     final first = weights.first;
     final diff = latest.weightKg - first.weightKg;
     final sign = diff >= 0 ? '+' : '';
-    return '$sign${diff.toStringAsFixed(1)} kg';
+    return '$sign${diff.toStringAsFixed(1)}';
   }
 
   @override
@@ -106,116 +106,141 @@ class HomeScreen extends ConsumerWidget {
                   totalCalories += logStrengthCalories + logCardioCalories;
                 }
 
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  children: [
-                    Text(
-                      'Hi, ${userProfile?.displayName ?? 'Athlete'}',
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      formatDate(now),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hi, ${userProfile?.displayName ?? 'Athlete'}',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              formatDate(now),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    Text('This week', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
-                    _WeeklySummaryDashboard(
-                      strengthMins: totalStrengthMins,
-                      cardioMins: totalCardioMins,
-                      calories: totalCalories,
-                      weightChange: _weightChangeText(weightsList),
-                    ),
-                    const SizedBox(height: 24),
-                    _WeeklyGoalCard(
-                      done: thisWeek.length,
-                      goal: weeklyGoal,
-                    ),
-                    const SizedBox(height: 12),
-                    _StreakCard(streakDays: streak),
-                    const SizedBox(height: 24),
-                    Text('Quick actions', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: () {
-                              ref
-                                  .read(activeWorkoutProvider.notifier)
-                                  .startEmpty('Quick Workout');
-                              context.push('/workout/active');
-                            },
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Start Empty Workout'),
-                          ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                        child: _WeeklySummaryDashboard(
+                          strengthMins: totalStrengthMins,
+                          cardioMins: totalCardioMins,
+                          calories: totalCalories,
+                          weightChange: _weightChangeText(weightsList),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton.tonal(
-                            onPressed: () => context.go('/plans'),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                        child: _WeeklyStatusCard(
+                          done: thisWeek.length,
+                          goal: weeklyGoal,
+                          streakDays: streak,
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Quick actions',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
                               children: [
-                                Icon(Icons.list_alt, size: 18),
-                                SizedBox(width: 8),
-                                Flexible(child: Text('Browse Plans')),
+                                Expanded(
+                                  flex: 3,
+                                  child: FilledButton.icon(
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      ref
+                                          .read(activeWorkoutProvider.notifier)
+                                          .startEmpty('Quick Workout');
+                                      context.push('/workout/active');
+                                    },
+                                    icon: const Icon(Icons.play_arrow_rounded),
+                                    label: const Text('Start Workout'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 2,
+                                  child: FilledButton.tonal(
+                                    onPressed: () => context.go('/plans'),
+                                    child: const Text('Plans'),
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 24),
-                    Text('Recent activity', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
-                    if (recent.isEmpty)
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: Text(
-                              'No workouts yet — start your first one!',
-                              style: theme.textTheme.bodyMedium,
-                            ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                        child: Text(
+                          'Recent activity',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
+                      ),
+                    ),
+                    if (recent.isEmpty)
+                      const SliverToBoxAdapter(
+                        child: _EmptyRecentActivity(),
                       )
                     else
-                      for (final log in recent)
-                        Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: const Icon(Icons.fitness_center),
-                            title: Text(log.planName),
-                            subtitle: Text(
-                              '${formatDate(log.date)} • '
-                              '${log.completedSets} sets',
-                            ),
-                            trailing: Text(formatVolume(log.totalVolume)),
-                            onTap: () => context.push('/history'),
-                          ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                        sliver: SliverList.separated(
+                          itemCount: recent.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final log = recent[index];
+                            return _ActivityCard(
+                              log: log,
+                              index: index,
+                            );
+                          },
                         ),
+                      ),
                   ],
                 );
               },
-              loading: () => const LoadingView(),
+              loading: () => const _HomeSkeleton(),
               error: (error, _) => ErrorView(
                 message: error.toString(),
                 onRetry: () => ref.invalidate(bodyWeightsProvider),
               ),
             ),
-            loading: () => const LoadingView(),
+            loading: () => const _HomeSkeleton(),
             error: (error, _) => ErrorView(
               message: error.toString(),
               onRetry: () => ref.invalidate(workoutLogsProvider),
             ),
           ),
-          loading: () => const LoadingView(),
+          loading: () => const _HomeSkeleton(),
           error: (error, _) => ErrorView(
             message: error.toString(),
             onRetry: () => ref.invalidate(userProfileProvider),
@@ -249,37 +274,53 @@ class _WeeklySummaryDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.7,
+
+    return Column(
       children: [
-        _StatCard(
-          icon: Icons.fitness_center,
-          label: 'Strength',
-          value: _formatHoursMins(strengthMins),
-          color: theme.colorScheme.primary,
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard.large(
+                icon: Icons.fitness_center_rounded,
+                label: 'Strength',
+                value: _formatHoursMins(strengthMins),
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard.large(
+                icon: Icons.directions_run_rounded,
+                label: 'Cardio',
+                value: _formatHoursMins(cardioMins),
+                color: theme.colorScheme.secondary,
+              ),
+            ),
+          ],
         ),
-        _StatCard(
-          icon: Icons.directions_run,
-          label: 'Cardio',
-          value: _formatHoursMins(cardioMins),
-          color: theme.colorScheme.tertiary,
-        ),
-        _StatCard(
-          icon: Icons.local_fire_department,
-          label: 'Est. Activity',
-          value: '${calories.round()} kcal',
-          color: Colors.orange,
-        ),
-        _StatCard(
-          icon: Icons.scale,
-          label: 'Weight Progress',
-          value: weightChange,
-          color: theme.colorScheme.secondary,
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard.small(
+                icon: Icons.local_fire_department_rounded,
+                label: 'Burned',
+                value: '${calories.round()}',
+                unit: 'kcal',
+                color: Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard.small(
+                icon: Icons.monitor_weight_outlined,
+                label: 'Weight',
+                value: weightChange,
+                unit: 'kg',
+                color: theme.colorScheme.tertiary,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -287,136 +328,477 @@ class _WeeklySummaryDashboard extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({
+  const _StatCard.large({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
-  });
+  })  : unit = null,
+        _size = _StatSize.large;
+
+  const _StatCard.small({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    this.unit,
+  }) : _size = _StatSize.small;
 
   final IconData icon;
   final String label;
   final String value;
+  final String? unit;
   final Color color;
+  final _StatSize _size;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+    final isLarge = _size == _StatSize.large;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outline),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _WeeklyGoalCard extends StatelessWidget {
-  const _WeeklyGoalCard({required this.done, required this.goal});
-
-  final int done;
-  final int goal;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final progress = (done / goal).clamp(0.0, 1.0);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.flag_outlined, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('Weekly goal', style: theme.textTheme.titleMedium),
-              ],
+            Container(
+              height: isLarge ? 5 : 4,
+              color: color,
             ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '$done of $goal workouts',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StreakCard extends StatelessWidget {
-  const _StreakCard({required this.streakDays});
-
-  final int streakDays;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.local_fire_department,
-                size: 32, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
+            Padding(
+              padding: EdgeInsets.all(isLarge ? 16 : 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Day streak', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(
-                    streakDays == 0
-                        ? 'Work out today to start a streak'
-                        : '$streakDays day${streakDays == 1 ? '' : 's'} in a row',
-                    style: theme.textTheme.bodyMedium,
+                  Row(
+                    children: [
+                      Icon(icon, color: color, size: isLarge ? 22 : 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          value,
+                          style: isLarge
+                              ? theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                )
+                              : theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (unit != null) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          unit!,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+enum _StatSize { large, small }
+
+class _WeeklyStatusCard extends StatelessWidget {
+  const _WeeklyStatusCard({
+    required this.done,
+    required this.goal,
+    required this.streakDays,
+  });
+
+  final int done;
+  final int goal;
+  final int streakDays;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final progress = (done / goal).clamp(0.0, 1.0);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primaryContainer,
+            theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 6,
+                    backgroundColor: theme.colorScheme.onPrimaryContainer
+                        .withValues(alpha: 0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.primary,
+                    ),
+                  ),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$done',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        Text(
+                          '/ $goal',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Weekly goal',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$done of $goal workouts completed',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer
+                          .withValues(alpha: 0.85),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_fire_department_rounded,
+                        size: 18,
+                        color: streakDays > 0
+                            ? Colors.orange
+                            : theme.colorScheme.onPrimaryContainer
+                                .withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        streakDays == 0
+                            ? 'Start a streak today'
+                            : '$streakDays day${streakDays == 1 ? '' : 's'} in a row',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityCard extends StatelessWidget {
+  const _ActivityCard({required this.log, required this.index});
+
+  final WorkoutLog log;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 300 + (index * 60)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 12 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outline),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => context.push('/history'),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.fitness_center_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          log.planName,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${formatDate(log.date)} • ${log.completedSets} sets',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    formatVolume(log.totalVolume),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyRecentActivity extends StatelessWidget {
+  const _EmptyRecentActivity();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.fitness_center_outlined,
+            size: 32,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No workouts yet',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Start your first workout to see it here.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeSkeleton extends StatelessWidget {
+  const _HomeSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 200,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 120,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverToBoxAdapter(
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SkeletonBox(height: 140, radius: 20),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _SkeletonBox(height: 140, radius: 20),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 12)),
+        const SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverToBoxAdapter(
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SkeletonBox(height: 100, radius: 20),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _SkeletonBox(height: 100, radius: 20),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        const SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverToBoxAdapter(
+            child: _SkeletonBox(height: 96, radius: 20),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({required this.height, required this.radius});
+
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }

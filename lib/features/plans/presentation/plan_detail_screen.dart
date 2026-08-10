@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,13 +13,11 @@ import 'package:gymgenie/features/workout/application/active_workout_controller.
 import 'package:gymgenie/features/workout/data/log_repository.dart';
 import 'package:gymgenie/features/workout/domain/workout_log.dart';
 
-/// Loads a single plan by id.
 final planDetailProvider =
     FutureProvider.family<WorkoutPlan?, String>((ref, planId) {
   return ref.watch(planRepositoryProvider).getPlan(planId);
 });
 
-/// Shows a plan's exercises and offers Start / Edit / Delete actions.
 class PlanDetailScreen extends ConsumerWidget {
   const PlanDetailScreen({super.key, required this.planId});
 
@@ -65,6 +64,22 @@ class PlanDetailScreen extends ConsumerWidget {
     }
   }
 
+  void _startWorkout(BuildContext context, WidgetRef ref, WorkoutPlan plan) {
+    HapticFeedback.lightImpact();
+    final logs = ref.read(workoutLogsProvider).valueOrNull ?? [];
+    WorkoutLog? lastLog;
+    for (final log in logs) {
+      if (log.planId == plan.id) {
+        lastLog = log;
+        break;
+      }
+    }
+    ref
+        .read(activeWorkoutProvider.notifier)
+        .startFromPlan(plan, lastLog: lastLog);
+    context.push('/workout/active');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final planAsync = ref.watch(planDetailProvider(planId));
@@ -89,12 +104,6 @@ class PlanDetailScreen extends ConsumerWidget {
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => context.push('/plans/$planId/edit'),
             ),
-            IconButton(
-              tooltip: 'Delete',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () =>
-                  _confirmAndDelete(context, ref, planAsync.valueOrNull!),
-            ),
           ],
         ],
       ),
@@ -113,87 +122,216 @@ class PlanDetailScreen extends ConsumerWidget {
           }
           final exercises = [...plan.exercises]
             ..sort((a, b) => a.order.compareTo(b.order));
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(plan.name, style: theme.textTheme.headlineSmall),
-              if (plan.description.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  plan.description,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              Text('Exercises', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              for (var i = 0; i < exercises.length; i++)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(child: Text('${i + 1}')),
-                    title: Text(exercises[i].exerciseName),
-                    subtitle: Text(_exerciseSummary(exercises[i])),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () async {
-                      final exercise = await ref.read(
-                        exerciseByIdProvider(exercises[i].exerciseId).future,
-                      );
-                      if (!context.mounted) return;
-                      if (exercise == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Exercise details not available.'),
+
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plan.name,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (plan.description.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          plan.description,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        );
-                        return;
-                      }
-                      context.push('/exercises/detail', extra: exercise);
-                    },
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.fitness_center,
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${exercises.length} exercises',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () {
-                  final logs = ref.read(workoutLogsProvider).valueOrNull ?? [];
-                  WorkoutLog? lastLog;
-                  for (final log in logs) {
-                    if (log.planId == plan.id) {
-                      lastLog = log;
-                      break;
-                    }
-                  }
-                  ref
-                      .read(activeWorkoutProvider.notifier)
-                      .startFromPlan(plan, lastLog: lastLog);
-                  context.push('/workout/active');
-                },
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Start Workout'),
               ),
-              const SizedBox(height: 8),
-              FilledButton.tonalIcon(
-                onPressed: () => showSharePlanDialog(context, ref, plan),
-                icon: const Icon(Icons.share_outlined),
-                label: const Text('Share Plan'),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverList.separated(
+                  itemCount: exercises.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    return _ExerciseTile(
+                      index: i,
+                      exercise: exercises[i],
+                      summary: _exerciseSummary(exercises[i]),
+                      onTap: () async {
+                        final exercise = await ref.read(
+                          exerciseByIdProvider(exercises[i].exerciseId).future,
+                        );
+                        if (!context.mounted) return;
+                        if (exercise == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Exercise details not available.'),
+                            ),
+                          );
+                          return;
+                        }
+                        context.push('/exercises/detail', extra: exercise);
+                      },
+                    );
+                  },
+                ),
               ),
-              const SizedBox(height: 8),
-              FilledButton.tonalIcon(
-                onPressed: () => context.push('/plans/${plan.id}/edit'),
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Edit'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => _confirmAndDelete(context, ref, plan),
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Delete'),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 120)),
             ],
           );
         },
+      ),
+      bottomNavigationBar: planAsync.valueOrNull == null
+          ? null
+          : SafeArea(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(color: theme.colorScheme.outline),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: FilledButton.icon(
+                        onPressed: () =>
+                            _startWorkout(context, ref, planAsync.valueOrNull!),
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        label: const Text('Start Workout'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton.icon(
+                        onPressed: () => showSharePlanDialog(
+                          context,
+                          ref,
+                          planAsync.valueOrNull!,
+                        ),
+                        icon: const Icon(Icons.share_outlined, size: 18),
+                        label: const Text('Share'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class _ExerciseTile extends StatelessWidget {
+  const _ExerciseTile({
+    required this.index,
+    required this.exercise,
+    required this.summary,
+    required this.onTap,
+  });
+
+  final int index;
+  final PlannedExercise exercise;
+  final String summary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${index + 1}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exercise.exerciseName,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        summary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
