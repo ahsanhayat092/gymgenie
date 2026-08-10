@@ -105,29 +105,6 @@ class MoreScreen extends ConsumerWidget {
 
           const SizedBox(height: 8),
 
-          // ── Community ─────────────────────────────────────────────────────
-          _SectionHeader(label: 'COMMUNITY'),
-          _MenuTile(
-            icon: Icons.people_outline,
-            label: 'Community Feed',
-            subtitle: 'Follow friends and see their workouts',
-            onTap: () => context.push('/community'),
-          ),
-          _MenuTile(
-            icon: Icons.store_mall_directory_outlined,
-            label: 'Plan Marketplace',
-            subtitle: 'Discover and import shared workout plans',
-            onTap: () => context.push('/marketplace'),
-          ),
-          _MenuTile(
-            icon: Icons.emoji_events_outlined,
-            label: 'Challenges',
-            subtitle: 'Join community fitness challenges',
-            onTap: () => context.push('/challenges'),
-          ),
-
-          const SizedBox(height: 8),
-
           // ── Settings ──────────────────────────────────────────────────────
           _SectionHeader(label: 'SETTINGS'),
           _MenuTile(
