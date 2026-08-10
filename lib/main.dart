@@ -11,21 +11,36 @@ import 'package:gymgenie/features/workout/data/log_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Ensure the local log database exists and try to sync anything saved
-  // while the device was offline.
-  await LocalLogStore().database;
-  await LogRepository(
-    FirebaseFirestore.instance,
-    FirebaseAuth.instance,
-    LocalLogStore(),
-  ).syncPendingLogs();
-
-  // Initialize and request push notification permissions.
-  final notificationService = NotificationService();
-  await notificationService.init();
-  await notificationService.requestPermissions();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
 
   runApp(const ProviderScope(child: GymGenieApp()));
+
+  // Run non-critical background services without blocking the main UI startup
+  _initServicesAndSync();
+}
+
+Future<void> _initServicesAndSync() async {
+  try {
+    await LocalLogStore().database;
+    await LogRepository(
+      FirebaseFirestore.instance,
+      FirebaseAuth.instance,
+      LocalLogStore(),
+    ).syncPendingLogs();
+  } catch (e) {
+    debugPrint('Local database or sync pending logs failed: $e');
+  }
+
+  try {
+    final notificationService = NotificationService();
+    await notificationService.init();
+    await notificationService.requestPermissions();
+  } catch (e) {
+    debugPrint('Notification service initialization failed: $e');
+  }
 }
