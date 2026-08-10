@@ -16,6 +16,7 @@ class UserProfile {
     this.workoutReminderEnabled = false,
     this.workoutReminderHour = 8,
     this.workoutReminderMinute = 0,
+    this.isAdmin = false,
     // ── Generator / survey fields ──────────────────────────────────────────
     this.age = 0,
     this.gender = '',
@@ -45,6 +46,9 @@ class UserProfile {
   final int workoutReminderHour;
   final int workoutReminderMinute;
 
+  /// Whether the user has administrative privileges for the database catalog.
+  final bool isAdmin;
+
   // ── Generator / survey fields ────────────────────────────────────────────
   final int age;                        // 0 = unset
   final String gender;                  // 'Male' | 'Female' | 'Other' | ''
@@ -72,6 +76,7 @@ class UserProfile {
       workoutReminderEnabled: (map['workoutReminderEnabled'] as bool?) ?? false,
       workoutReminderHour: (map['workoutReminderHour'] as num?)?.toInt() ?? 8,
       workoutReminderMinute: (map['workoutReminderMinute'] as num?)?.toInt() ?? 0,
+      isAdmin: (map['isAdmin'] as bool?) ?? false,
       age: (map['age'] as num?)?.toInt() ?? 0,
       gender: (map['gender'] as String?) ?? '',
       experience: (map['experience'] as String?) ?? '',
@@ -97,6 +102,7 @@ class UserProfile {
       'workoutReminderEnabled': workoutReminderEnabled,
       'workoutReminderHour': workoutReminderHour,
       'workoutReminderMinute': workoutReminderMinute,
+      'isAdmin': isAdmin,
       // ── Generator / survey fields ────────────────────────────────────────────
       if (age > 0) 'age': age,
       if (gender.isNotEmpty) 'gender': gender,
@@ -123,6 +129,7 @@ class UserProfile {
     bool? workoutReminderEnabled,
     int? workoutReminderHour,
     int? workoutReminderMinute,
+    bool? isAdmin,
     int? age,
     String? gender,
     String? experience,
@@ -146,6 +153,7 @@ class UserProfile {
       workoutReminderEnabled: workoutReminderEnabled ?? this.workoutReminderEnabled,
       workoutReminderHour: workoutReminderHour ?? this.workoutReminderHour,
       workoutReminderMinute: workoutReminderMinute ?? this.workoutReminderMinute,
+      isAdmin: isAdmin ?? this.isAdmin,
       age: age ?? this.age,
       gender: gender ?? this.gender,
       experience: experience ?? this.experience,
