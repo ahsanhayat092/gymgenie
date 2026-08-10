@@ -57,7 +57,7 @@ class _GymGenieAppState extends ConsumerState<GymGenieApp>
 
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'GymGenie',
+      title: 'gymZish',
       theme: AppTheme.darkTheme,
       routerConfig: router,
       debugShowCheckedModeBanner: false,

@@ -105,20 +105,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Icon(
-                          Icons.fitness_center,
-                          size: 56,
-                          color: theme.colorScheme.primary,
+                        Image.asset(
+                          'assets/logo.png',
+                          height: 120,
+                          fit: BoxFit.contain,
                         ),
                         const SizedBox(height: 16),
-                        Text(
-                          'Join GymGenie',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
                         Text(
                           'Create your account to start training smarter.',
                           textAlign: TextAlign.center,

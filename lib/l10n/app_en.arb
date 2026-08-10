@@ -4,7 +4,7 @@
   "restTimerDesc": "Trigger a countdown rest timer when you check a set as completed.",
   "restTimerDuration": "Rest Timer Duration",
   "backupData": "Backup & Synchronization",
-  "backupDesc": "Create offline plan codes or restore saved profiles from GymGenie.",
+  "backupDesc": "Create offline plan codes or restore saved profiles from gymZish.",
   "logoutButton": "Sign Out",
   "themeMode": "App Theme",
   "languageTitle": "Language",

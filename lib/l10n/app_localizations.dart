@@ -133,7 +133,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupDesc.
   ///
   /// In en, this message translates to:
-  /// **'Create offline plan codes or restore saved profiles from GymGenie.'**
+  /// **'Create offline plan codes or restore saved profiles from gymZish.'**
   String get backupDesc;
 
   /// No description provided for @logoutButton.

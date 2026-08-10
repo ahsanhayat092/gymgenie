@@ -26,7 +26,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupDesc =>
-      'Create offline plan codes or restore saved profiles from GymGenie.';
+      'Create offline plan codes or restore saved profiles from gymZish.';
 
   @override
   String get logoutButton => 'Sign Out';

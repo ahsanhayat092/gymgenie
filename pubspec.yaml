@@ -37,3 +37,4 @@ flutter:
   generate: true
   assets:
     - assets/exercises.json
+    - assets/logo.png

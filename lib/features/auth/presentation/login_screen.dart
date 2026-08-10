@@ -280,42 +280,12 @@ class _BrandHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 88,
-          height: 88,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.primary.withValues(alpha: 0.3),
-                theme.colorScheme.primary.withValues(alpha: 0.05),
-              ],
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.fitness_center,
-            size: 44,
-            color: theme.colorScheme.primary,
-          ),
+        Image.asset(
+          'assets/logo.png',
+          height: 180,
+          fit: BoxFit.contain,
         ),
-        const SizedBox(height: 20),
-        Text(
-          'GymGenie',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         Text(
           'Sign in to continue your training',
           textAlign: TextAlign.center,
