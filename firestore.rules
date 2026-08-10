@@ -9,17 +9,17 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // User profiles: owners have full control; any signed-in user can read
-    // profiles for the friends/community search features.
+    // User profiles: owners have control over their profile; any signed-in user
+    // can read profiles for search; admins have full write control.
     match /users/{uid} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == uid;
-      allow update: if request.auth != null && request.auth.uid == uid;
-      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow update: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow delete: if isAdmin();
 
       // Private user subcollections (plans, logs, bodyWeights, following, etc.)
       match /{subcollection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if (request.auth != null && request.auth.uid == uid) || isAdmin();
       }
     }
 
