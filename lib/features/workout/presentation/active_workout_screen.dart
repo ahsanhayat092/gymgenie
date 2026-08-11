@@ -1191,7 +1191,9 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                       ? exercises
                       : exercises
                           .where((e) =>
-                              e.name.toLowerCase().contains(_query))
+                              e.name.toLowerCase().contains(_query) ||
+                              e.muscleGroup.toLowerCase().contains(_query) ||
+                              e.equipment.toLowerCase().contains(_query))
                           .toList();
                   if (filtered.isEmpty) {
                     return const EmptyView(
@@ -1200,45 +1202,83 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                       subtitle: 'Try a different search term.',
                     );
                   }
-                  return ListView.builder(
+                  return GridView.builder(
                     controller: scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.8,
+                    ),
                     itemCount: filtered.length,
                     itemBuilder: (context, i) {
                       final exercise = filtered[i];
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.fitness_center,
-                              color: theme.colorScheme.primary,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            exercise.name,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${exercise.muscleGroup} • ${exercise.equipment}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          trailing: Icon(
-                            Icons.add_circle_outline,
-                            color: theme.colorScheme.primary,
-                          ),
+                        margin: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
                           onTap: () => widget.onSelected(exercise),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  color: const Color(0xFF1B1B1F),
+                                  child: exercise.gifUrl.isNotEmpty
+                                      ? CachedNetworkImage(
+                                          imageUrl: exercise.gifUrl,
+                                          fit: BoxFit.contain,
+                                          placeholder: (context, url) => const Center(
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                          errorWidget: (context, url, error) => Center(
+                                            child: Icon(
+                                              Icons.fitness_center,
+                                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Icon(
+                                            Icons.fitness_center,
+                                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      exercise.name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.labelMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${exercise.muscleGroup} • ${exercise.equipment}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
