@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -512,7 +513,6 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final library = ref.watch(exerciseLibraryProvider);
-    final theme = Theme.of(context);
     final query = _query.trim().toLowerCase();
 
     return FractionallySizedBox(
@@ -582,41 +582,20 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                 if (filtered.isEmpty) {
                   return const Center(child: Text('No exercises found'));
                 }
-                return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 16),
+                return GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.8,
+                  ),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final exercise = filtered[index];
-                    return Card(
-                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: ListTile(
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            Icons.fitness_center,
-                            color: theme.colorScheme.primary,
-                            size: 20,
-                          ),
-                        ),
-                        title: Text(
-                          exercise.name,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '${exercise.muscleGroup} • ${exercise.equipment}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        onTap: () => Navigator.of(context).pop(exercise),
-                      ),
+                    return _ExerciseGridCard(
+                      exercise: exercise,
+                      onTap: () => Navigator.of(context).pop(exercise),
                     );
                   },
                 );
@@ -624,6 +603,88 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ExerciseGridCard extends StatelessWidget {
+  const _ExerciseGridCard({
+    required this.exercise,
+    required this.onTap,
+  });
+
+  final Exercise exercise;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Container(
+                color: const Color(0xFF1B1B1F),
+                child: exercise.gifUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: exercise.gifUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        errorWidget: (context, url, error) => Center(
+                          child: Icon(
+                            Icons.fitness_center,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Icons.fitness_center,
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        ),
+                      ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    exercise.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${exercise.muscleGroup} • ${exercise.equipment}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

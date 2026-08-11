@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1337,6 +1338,8 @@ class _SubstitutionSheet extends ConsumerStatefulWidget {
 class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
   String? _selectedReason;
   bool _showAlternatives = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
 
   final List<String> _reasons = [
     'Equipment unavailable',
@@ -1345,6 +1348,12 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
     'Don\'t like this exercise',
     'Gym is crowded',
   ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1415,7 +1424,17 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
 
             final alternatives = library.where((ex) {
               if (ex.name == widget.exerciseLog.exerciseName) return false;
-              return ex.muscleGroup == original.muscleGroup;
+              if (ex.muscleGroup != original.muscleGroup) return false;
+
+              if (_query.trim().isNotEmpty) {
+                final q = _query.trim().toLowerCase();
+                if (!ex.name.toLowerCase().contains(q) &&
+                    !ex.muscleGroup.toLowerCase().contains(q) &&
+                    !ex.equipment.toLowerCase().contains(q)) {
+                  return false;
+                }
+              }
+              return true;
             }).toList();
 
             if (_selectedReason == 'Equipment unavailable' ||
@@ -1463,50 +1482,100 @@ class _SubstitutionSheetState extends ConsumerState<_SubstitutionSheet> {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _query = value),
+                    decoration: const InputDecoration(
+                      hintText: 'Search alternatives',
+                      prefixIcon: Icon(Icons.search),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: ListView.builder(
-                      controller: scrollController,
-                      itemCount: alternatives.length,
-                      itemBuilder: (context, idx) {
-                        final ex = alternatives[idx];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.fitness_center,
-                                color: theme.colorScheme.primary,
-                                size: 20,
-                              ),
+                    child: alternatives.isEmpty
+                        ? const Center(child: Text('No alternatives found'))
+                        : GridView.builder(
+                            controller: scrollController,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.8,
                             ),
-                            title: Text(
-                              ex.name,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${ex.muscleGroup} • ${ex.equipment} • ${ex.difficulty}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            trailing: Icon(
-                              Icons.swap_horiz,
-                              color: theme.colorScheme.primary,
-                            ),
-                            onTap: () => widget.onSelected(ex),
+                            itemCount: alternatives.length,
+                            itemBuilder: (context, idx) {
+                              final ex = alternatives[idx];
+                              return Card(
+                                margin: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () => widget.onSelected(ex),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          color: const Color(0xFF1B1B1F),
+                                          child: ex.gifUrl.isNotEmpty
+                                              ? CachedNetworkImage(
+                                                  imageUrl: ex.gifUrl,
+                                                  fit: BoxFit.contain,
+                                                  placeholder: (context, url) => const Center(
+                                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                                  ),
+                                                  errorWidget: (context, url, error) => Center(
+                                                    child: Icon(
+                                                      Icons.fitness_center,
+                                                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                                    ),
+                                                  ),
+                                                )
+                                              : Center(
+                                                  child: Icon(
+                                                    Icons.fitness_center,
+                                                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              ex.name,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.labelMedium?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                                height: 1.2,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '${ex.muscleGroup} • ${ex.equipment}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: theme.colorScheme.onSurfaceVariant,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               ),
