@@ -572,7 +572,9 @@ class _ExercisePickerSheetState extends ConsumerState<_ExercisePickerSheet> {
                     return false;
                   }
                   if (query.isNotEmpty &&
-                      !e.name.toLowerCase().contains(query)) {
+                      !e.name.toLowerCase().contains(query) &&
+                      !e.muscleGroup.toLowerCase().contains(query) &&
+                      !e.equipment.toLowerCase().contains(query)) {
                     return false;
                   }
                   return true;

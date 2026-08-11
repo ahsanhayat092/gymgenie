@@ -34,7 +34,10 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
       if (_selectedGroup != null && e.muscleGroup != _selectedGroup) {
         return false;
       }
-      if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
+      if (query.isNotEmpty &&
+          !e.name.toLowerCase().contains(query) &&
+          !e.muscleGroup.toLowerCase().contains(query) &&
+          !e.equipment.toLowerCase().contains(query)) {
         return false;
       }
       return true;

@@ -60,19 +60,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 1. Not logged in → send to login (unless already on auth pages).
       if (user == null && !onAuthPage) return '/login';
 
-      // 2. Logged in + on auth page → go home or onboarding.
+      // 2. Logged in + on auth page → wait for profile load, then go home or onboarding.
       if (user != null && onAuthPage) {
+        final profileAsync = ref.read(userProfileProvider);
+        if (profileAsync.isLoading) return null; // Wait for Firestore profile load
+
         final complete = ref.read(onboardingCompleteProvider);
         return complete ? '/home' : '/onboarding';
       }
 
-      // 3. Logged in but onboarding not done → redirect to onboarding
-      //    (only if we're not already there and profile has loaded).
+      // 3. Logged in but onboarding not done → redirect to onboarding.
       if (user != null && !onOnboarding) {
         final complete = ref.read(onboardingCompleteProvider);
         final profileAsync = ref.read(userProfileProvider);
         if (profileAsync.hasValue && !complete) {
           return '/onboarding';
+        }
+      }
+
+      // 4. Logged in + onboarding done + on onboarding page → redirect to home.
+      if (user != null && onOnboarding) {
+        final complete = ref.read(onboardingCompleteProvider);
+        final profileAsync = ref.read(userProfileProvider);
+        if (profileAsync.hasValue && complete) {
+          return '/home';
         }
       }
 
