@@ -335,6 +335,15 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
     _replaceExercise(current, index, updated);
   }
 
+  void toggleCardioCompleted(int exerciseIndex) {
+    final current = state;
+    if (current == null) return;
+    if (exerciseIndex < 0 || exerciseIndex >= current.exercises.length) return;
+    final exercise = current.exercises[exerciseIndex];
+    final updated = exercise.copyWith(isCardioCompleted: !exercise.isCardioCompleted);
+    _replaceExercise(current, exerciseIndex, updated);
+  }
+
   ExerciseLog _copyExercise(ExerciseLog exercise, {List<SetLog>? sets}) {
     return ExerciseLog(
       exerciseId: exercise.exerciseId,
@@ -346,6 +355,7 @@ class ActiveWorkoutController extends StateNotifier<ActiveWorkoutState?> {
       inclinePct: exercise.inclinePct,
       resistanceLevel: exercise.resistanceLevel,
       caloriesBurned: exercise.caloriesBurned,
+      isCardioCompleted: exercise.isCardioCompleted,
     );
   }
 

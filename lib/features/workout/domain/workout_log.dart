@@ -64,6 +64,7 @@ class ExerciseLog {
     this.resistanceLevel,
     this.caloriesBurned,
     this.cardioSegments,
+    this.isCardioCompleted = false,
   });
 
   final String exerciseId;
@@ -76,6 +77,7 @@ class ExerciseLog {
   final double? resistanceLevel;
   final double? caloriesBurned;
   final List<CardioSegment>? cardioSegments;
+  final bool isCardioCompleted;
 
   double get volume => sets
       .where((s) => s.completed)
@@ -94,6 +96,7 @@ class ExerciseLog {
     double? resistanceLevel,
     double? caloriesBurned,
     List<CardioSegment>? cardioSegments,
+    bool? isCardioCompleted,
   }) {
     return ExerciseLog(
       exerciseId: exerciseId ?? this.exerciseId,
@@ -106,6 +109,7 @@ class ExerciseLog {
       resistanceLevel: resistanceLevel ?? this.resistanceLevel,
       caloriesBurned: caloriesBurned ?? this.caloriesBurned,
       cardioSegments: cardioSegments ?? this.cardioSegments,
+      isCardioCompleted: isCardioCompleted ?? this.isCardioCompleted,
     );
   }
 
@@ -127,6 +131,7 @@ class ExerciseLog {
       cardioSegments: rawSegments
           ?.map((e) => CardioSegment.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
+      isCardioCompleted: map['isCardioCompleted'] as bool? ?? false,
     );
   }
 
@@ -135,6 +140,7 @@ class ExerciseLog {
       'exerciseId': exerciseId,
       'exerciseName': exerciseName,
       'sets': sets.map((s) => s.toMap()).toList(),
+      'isCardioCompleted': isCardioCompleted,
       if (durationMinutes != null) 'durationMinutes': durationMinutes,
       if (distanceKm != null) 'distanceKm': distanceKm,
       if (speedKmh != null) 'speedKmh': speedKmh,

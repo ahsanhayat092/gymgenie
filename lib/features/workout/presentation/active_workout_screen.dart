@@ -285,12 +285,30 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
+  bool _isExerciseCompleted(ExerciseLog ex) {
+    if (ex.sets.isEmpty) {
+      return ex.isCardioCompleted;
+    }
+    return ex.sets.isNotEmpty && ex.sets.every((s) => s.completed);
+  }
+
   Widget _buildWorkoutBody(
     BuildContext context,
     ActiveWorkoutState workout,
     ThemeData theme,
     bool restActive,
   ) {
+    int activeIndex = 0;
+    for (int i = 0; i < workout.exercises.length; i++) {
+      if (!_isExerciseCompleted(workout.exercises[i])) {
+        activeIndex = i;
+        break;
+      }
+      if (i == workout.exercises.length - 1) {
+        activeIndex = i;
+      }
+    }
+
     return ListView(
       padding: EdgeInsets.fromLTRB(16, 8, 16, restActive ? 160 : 24),
       children: [
@@ -304,7 +322,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               ),
             ),
           ),
-        for (var i = 0; i < workout.exercises.length; i++)
+        for (var i = 0; i <= activeIndex && i < workout.exercises.length; i++)
           _ExerciseCard(
             index: i,
             exercise: workout.exercises[i],
@@ -458,6 +476,18 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                               '$completedSets of ${widget.exercise.sets.length} sets done',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          if (isCardio)
+                            Text(
+                              widget.exercise.isCardioCompleted ? 'Completed' : 'Cardio in progress',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: widget.exercise.isCardioCompleted
+                                    ? Colors.green
+                                    : theme.colorScheme.onSurfaceVariant,
+                                fontWeight: widget.exercise.isCardioCompleted
+                                    ? FontWeight.bold
+                                    : null,
                               ),
                             ),
                         ],
@@ -1016,6 +1046,34 @@ class _CardioMetrics extends ConsumerWidget {
             ),
           ),
         ],
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: exercise.isCardioCompleted
+                  ? Colors.green.withValues(alpha: 0.2)
+                  : theme.colorScheme.primaryContainer,
+              foregroundColor: exercise.isCardioCompleted
+                  ? Colors.green
+                  : theme.colorScheme.onPrimaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              notifier.toggleCardioCompleted(index);
+            },
+            icon: Icon(
+              exercise.isCardioCompleted ? Icons.check_circle : Icons.check_circle_outline,
+            ),
+            label: Text(
+              exercise.isCardioCompleted ? 'Cardio Completed' : 'Mark Cardio as Complete',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
       ],
     );
   }
