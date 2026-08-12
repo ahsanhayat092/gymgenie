@@ -434,6 +434,9 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
     final completedSets =
         widget.exercise.sets.where((s) => s.completed).length;
 
+    final exerciseAsync = ref.watch(exerciseByIdProvider(widget.exercise.exerciseId));
+    final gifUrl = exerciseAsync.valueOrNull?.gifUrl ?? '';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: ClipRRect(
@@ -520,9 +523,42 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                   : CrossFadeState.showSecond,
               firstChild: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: isCardio
-                    ? _CardioMetrics(index: widget.index, exercise: widget.exercise)
-                    : _StrengthSets(index: widget.index, exercise: widget.exercise),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (gifUrl.isNotEmpty) ...[
+                      Container(
+                        height: 180,
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B1B1F),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: theme.colorScheme.outlineVariant),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: gifUrl,
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            errorWidget: (context, url, error) => Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    isCardio
+                        ? _CardioMetrics(index: widget.index, exercise: widget.exercise)
+                        : _StrengthSets(index: widget.index, exercise: widget.exercise),
+                  ],
+                ),
               ),
               secondChild: const SizedBox.shrink(),
             ),
