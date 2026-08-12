@@ -204,7 +204,7 @@ class _ExerciseCard extends StatelessWidget {
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 250 + (index * 40)),
+      duration: Duration(milliseconds: 250 + ((index % 12) * 40)),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Opacity(
@@ -227,32 +227,49 @@ class _ExerciseCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: Container(
-                  color: const Color(0xFF1B1B1F),
-                  child: exercise.gifUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: exercise.gifUrl,
-                          fit: BoxFit.contain,
-                          placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          errorWidget: (context, url, error) => Center(
-                            child: Icon(
-                              Icons.fitness_center,
-                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B1B1F),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: exercise.gifUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: exercise.gifUrl,
+                              fit: BoxFit.contain,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(
+                                  Icons.fitness_center,
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ),
+                            )
+                          : Center(
+                              child: Icon(
+                                Icons.fitness_center,
+                                color: theme.colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.5),
+                              ),
                             ),
-                          ),
-                        )
-                      : Center(
-                          child: Icon(
-                            Icons.fitness_center,
-                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
+                    ),
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -260,12 +277,12 @@ class _ExerciseCard extends StatelessWidget {
                       exercise.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelMedium?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
