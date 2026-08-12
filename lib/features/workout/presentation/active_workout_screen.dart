@@ -908,27 +908,29 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (gifUrl.isNotEmpty) ...[
-                      Container(
-                        height: 180,
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1B1B1F),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: theme.colorScheme.outlineVariant),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: gifUrl,
-                            fit: BoxFit.contain,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            errorWidget: (context, url, error) => Center(
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      Center(
+                        child: Container(
+                          height: 180,
+                          width: 180,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: theme.colorScheme.outlineVariant),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: gifUrl,
+                              fit: BoxFit.contain,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(
+                                  Icons.broken_image_outlined,
+                                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                ),
                               ),
                             ),
                           ),

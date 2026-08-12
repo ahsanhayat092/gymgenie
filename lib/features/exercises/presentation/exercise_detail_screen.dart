@@ -25,41 +25,44 @@ class ExerciseDetailScreen extends ConsumerWidget {
             slivers: [
               if (exercise.gifUrl.isNotEmpty)
                 SliverToBoxAdapter(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                    height: 240,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1E),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: theme.colorScheme.outline),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: CachedNetworkImage(
-                        imageUrl: exercise.gifUrl,
-                        fit: BoxFit.contain,
-                        placeholder: (context, url) => Center(
-                          child: CircularProgressIndicator(
-                            color: theme.colorScheme.primary,
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                      height: 240,
+                      width: 240,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: theme.colorScheme.outline),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: CachedNetworkImage(
+                          imageUrl: exercise.gifUrl,
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => Center(
+                            child: CircularProgressIndicator(
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
-                        ),
-                        errorWidget: (context, url, error) => Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.broken_image_outlined,
-                                size: 48,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Preview unavailable',
-                                style: theme.textTheme.bodyMedium?.copyWith(
+                          errorWidget: (context, url, error) => Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 48,
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Preview unavailable',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
