@@ -34,7 +34,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   void initState() {
     super.initState();
-    _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
   }
@@ -220,9 +220,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: workout == null
-              ? const Text('Workout')
-              : _ElapsedTimer(workout: workout),
+          title: const Text('Workout'),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.of(context).maybePop(),
@@ -250,7 +248,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               )
             : Stack(
                 children: [
-                  _buildWorkoutBody(context, workout, theme, restTimer.isActive),
+                  _buildWorkoutBody(context, workout, restTimer.isActive),
                   if (restTimer.isActive)
                     Positioned(
                       left: 16,
@@ -263,10 +261,25 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         bottomNavigationBar: workout == null
             ? null
             : SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        theme.scaffoldBackgroundColor.withValues(alpha: 0),
+                        theme.scaffoldBackgroundColor,
+                      ],
+                    ),
+                  ),
                   child: FilledButton.icon(
                     onPressed: _finishing ? null : _finishWorkout,
+                    style: FilledButton.styleFrom(
+                      elevation: 8,
+                      shadowColor:
+                          theme.colorScheme.primary.withValues(alpha: 0.4),
+                    ),
                     icon: _finishing
                         ? const SizedBox(
                             width: 20,
@@ -295,7 +308,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Widget _buildWorkoutBody(
     BuildContext context,
     ActiveWorkoutState workout,
-    ThemeData theme,
     bool restActive,
   ) {
     int activeIndex = 0;
@@ -312,26 +324,20 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     return ListView(
       padding: EdgeInsets.fromLTRB(16, 8, 16, restActive ? 160 : 24),
       children: [
-        if (workout.planName.isNotEmpty && workout.planName != 'Quick Workout')
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              workout.planName,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
+        _WorkoutHeader(workout: workout),
         for (var i = 0; i <= activeIndex && i < workout.exercises.length; i++)
           _ExerciseCard(
             index: i,
             exercise: workout.exercises[i],
+            isActive: i == activeIndex &&
+                !_isExerciseCompleted(workout.exercises[i]),
+            isCompleted: _isExerciseCompleted(workout.exercises[i]),
           ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
+        _DashedActionButton(
           onPressed: _showExercisePicker,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add Exercise'),
+          icon: Icons.add_rounded,
+          label: 'Add Exercise',
         ),
         const SizedBox(height: 24),
       ],
@@ -339,56 +345,332 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 }
 
-class _ElapsedTimer extends StatelessWidget {
-  const _ElapsedTimer({required this.workout});
+class _DashedActionButton extends StatelessWidget {
+  const _DashedActionButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
 
-  final ActiveWorkoutState workout;
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.secondary,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.secondary.withValues(alpha: 0.5),
-                blurRadius: 8,
+    return CustomPaint(
+      painter: _DashedBorderPainter(
+        color: theme.colorScheme.primary.withValues(alpha: 0.5),
+        borderRadius: 16,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: theme.colorScheme.primary, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({
+    required this.color,
+    required this.borderRadius,
+  });
+
+  final Color color;
+  final double borderRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.4
+      ..style = PaintingStyle.stroke;
+
+    const dashWidth = 6.0;
+    const dashSpace = 4.0;
+
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(borderRadius),
+    );
+    final path = Path()..addRRect(rrect);
+
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final end = (distance + dashWidth).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.borderRadius != borderRadius;
+}
+
+class _WorkoutHeader extends StatelessWidget {
+  const _WorkoutHeader({required this.workout});
+
+  final ActiveWorkoutState workout;
+
+  String _formatElapsed() {
+    final elapsed = DateTime.now().difference(workout.startedAt);
+    final minutes = elapsed.inMinutes;
+    final seconds = elapsed.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _formatVolume(double volume) {
+    if (volume >= 1000) {
+      return '${(volume / 1000).toStringAsFixed(1)}k';
+    }
+    return volume.toStringAsFixed(0);
+  }
+
+  bool _isExerciseCompleted(ExerciseLog ex) {
+    if (ex.sets.isEmpty) return ex.isCardioCompleted;
+    return ex.sets.isNotEmpty && ex.sets.every((s) => s.completed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final totalExercises = workout.exercises.length;
+    final doneExercises =
+        workout.exercises.where(_isExerciseCompleted).length;
+    final totalSets = workout.exercises
+        .fold<int>(0, (sum, ex) => sum + ex.sets.length);
+    final doneSets = workout.exercises.fold<int>(
+        0, (sum, ex) => sum + ex.sets.where((s) => s.completed).length);
+    final volume = workout.exercises.fold<double>(
+      0,
+      (sum, ex) =>
+          sum +
+          ex.sets
+              .where((s) => s.completed)
+              .fold<double>(0, (s, set) => s + set.weight * set.reps),
+    );
+    final progress = totalSets > 0
+        ? doneSets / totalSets
+        : (totalExercises > 0 ? doneExercises / totalExercises : 0.0);
+
+    final planLabel =
+        workout.planName.isEmpty ? 'Quick Workout' : workout.planName;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary.withValues(alpha: 0.14),
+            theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+            theme.colorScheme.surface,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      planLabel,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.secondary
+                                    .withValues(alpha: 0.5),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'LIVE SESSION',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.secondary,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatElapsed(),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  Text(
+                    'ELAPSED',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      letterSpacing: 1.6,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          '${workout.elapsedMinutes} min',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontFeatures: const [FontFeature.tabularFigures()],
+          const SizedBox(height: 18),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: progress),
+              duration: const Duration(milliseconds: 400),
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: 6,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  progress >= 1
+                      ? theme.colorScheme.secondary
+                      : theme.colorScheme.primary,
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _StatChip(
+                icon: Icons.fitness_center,
+                label: '$doneExercises/$totalExercises exercises',
+              ),
+              _StatChip(
+                icon: Icons.check_circle_outline,
+                label: '$doneSets/$totalSets sets',
+              ),
+              _StatChip(
+                icon: Icons.monitor_weight_outlined,
+                label: '${_formatVolume(volume)} kg lifted',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ExerciseCard extends ConsumerStatefulWidget {
-  const _ExerciseCard({required this.index, required this.exercise});
+  const _ExerciseCard({
+    required this.index,
+    required this.exercise,
+    required this.isActive,
+    required this.isCompleted,
+  });
 
   final int index;
   final ExerciseLog exercise;
+  final bool isActive;
+  final bool isCompleted;
 
   @override
   ConsumerState<_ExerciseCard> createState() => _ExerciseCardState();
 }
 
 class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
-  bool _expanded = true;
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = !widget.isCompleted;
+  }
 
   void _showSubstitutionPicker() {
     showModalBottomSheet<void>(
@@ -433,13 +715,46 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
     final isCardio = widget.exercise.sets.isEmpty;
     final completedSets =
         widget.exercise.sets.where((s) => s.completed).length;
+    final totalSets = widget.exercise.sets.length;
+    final setProgress = totalSets > 0 ? completedSets / totalSets : 0.0;
 
     final exerciseAsync = ref.watch(exerciseByIdProvider(widget.exercise.exerciseId));
     final gifUrl = exerciseAsync.valueOrNull?.gifUrl ?? '';
 
-    return Card(
+    final statusColor = widget.isCompleted
+        ? theme.colorScheme.secondary
+        : widget.isActive
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurfaceVariant;
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: ClipRRect(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: widget.isActive
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
+      ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: widget.isActive
+                ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                : widget.isCompleted
+                    ? theme.colorScheme.secondary.withValues(alpha: 0.25)
+                    : theme.colorScheme.outline,
+            width: widget.isActive ? 1.5 : 1,
+          ),
+        ),
+        child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,12 +769,20 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
+                        color: widget.isCompleted
+                            ? theme.colorScheme.secondaryContainer
+                            : theme.colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        isCardio ? Icons.directions_run : Icons.fitness_center,
-                        color: theme.colorScheme.primary,
+                        widget.isCompleted
+                            ? Icons.check_circle
+                            : (isCardio
+                                ? Icons.directions_run
+                                : Icons.fitness_center),
+                        color: widget.isCompleted
+                            ? theme.colorScheme.secondary
+                            : theme.colorScheme.primary,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -467,26 +790,84 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            widget.exercise.exerciseName,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          if (!isCardio)
-                            Text(
-                              '$completedSets of ${widget.exercise.sets.length} sets done',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.exercise.exerciseName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
+                              if (widget.isActive && !widget.isCompleted) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    'IN PROGRESS',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 9,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if (!isCardio)
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 56,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value: setProgress,
+                                      minHeight: 4,
+                                      backgroundColor: theme.colorScheme
+                                          .surfaceContainerHighest,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(
+                                        statusColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  widget.isCompleted
+                                      ? 'Completed'
+                                      : '$completedSets/$totalSets sets',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: widget.isCompleted
+                                        ? theme.colorScheme.secondary
+                                        : theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: widget.isCompleted
+                                        ? FontWeight.w700
+                                        : null,
+                                  ),
+                                ),
+                              ],
                             ),
                           if (isCardio)
                             Text(
                               widget.exercise.isCardioCompleted ? 'Completed' : 'Cardio in progress',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: widget.exercise.isCardioCompleted
-                                    ? Colors.green
+                                    ? theme.colorScheme.secondary
                                     : theme.colorScheme.onSurfaceVariant,
                                 fontWeight: widget.exercise.isCardioCompleted
                                     ? FontWeight.bold
@@ -564,6 +945,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -638,19 +1020,14 @@ class _StrengthSets extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final notifier = ref.read(activeWorkoutProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Row(
+        const Padding(
+          padding: EdgeInsets.fromLTRB(4, 0, 0, 4),
+          child: Row(
             children: [
               _HeaderCell('SET', flex: 1),
               _HeaderCell('REPS', flex: 2),
@@ -660,21 +1037,20 @@ class _StrengthSets extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
         for (var s = 0; s < exercise.sets.length; s++)
           _SetRow(
             exerciseIndex: index,
             setIndex: s,
             set: exercise.sets[s],
           ),
-        const SizedBox(height: 8),
-        TextButton.icon(
+        const SizedBox(height: 10),
+        _DashedActionButton(
           onPressed: () {
             HapticFeedback.lightImpact();
             notifier.addSet(index);
           },
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Add set'),
+          icon: Icons.add_rounded,
+          label: 'Add set',
         ),
       ],
     );
@@ -696,6 +1072,8 @@ class _HeaderCell extends StatelessWidget {
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 1.4,
               ),
         ),
       ),
@@ -720,30 +1098,47 @@ class _SetRow extends ConsumerWidget {
     final notifier = ref.read(activeWorkoutProvider.notifier);
     final done = set.completed;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: done
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.35)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(12),
         border: done
             ? Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                color: theme.colorScheme.secondary.withValues(alpha: 0.4),
               )
-            : null,
+            : Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.4),
+              ),
       ),
       child: Row(
         children: [
           Expanded(
             flex: 1,
             child: Center(
-              child: Text(
-                '${set.setNumber}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: done ? theme.colorScheme.primary : null,
+              child: Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: done
+                      ? theme.colorScheme.secondary.withValues(alpha: 0.15)
+                      : theme.colorScheme.surfaceContainerHighest,
+                ),
+                child: Center(
+                  child: Text(
+                    '${set.setNumber}',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: done
+                          ? theme.colorScheme.secondary
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -807,12 +1202,12 @@ class _SetRow extends ConsumerWidget {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: done
-                        ? theme.colorScheme.primary
+                        ? theme.colorScheme.secondary
                         : theme.colorScheme.surfaceContainerHighest,
                     border: done
                         ? null
@@ -877,6 +1272,7 @@ class _NumberField extends StatelessWidget {
       textAlign: TextAlign.center,
       style: theme.textTheme.bodyLarge?.copyWith(
         fontWeight: FontWeight.w700,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
       decoration: InputDecoration(
         isDense: true,
@@ -1349,106 +1745,142 @@ class _RestTimerOverlay extends ConsumerWidget {
         ? state.remainingSeconds / state.totalSeconds
         : 0.0;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, 24 * (1 - t)),
+          child: child,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                SizedBox(
-                  width: 52,
-                  height: 52,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 5,
-                        backgroundColor:
-                            theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          theme.colorScheme.primary,
-                        ),
-                      ),
-                      Center(
-                        child: Icon(
-                          Icons.timer,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Rest Period',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatTime(state.remainingSeconds),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.primary,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.surfaceContainerHighest,
+              theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: 0.35),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 88,
+                height: 88,
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    FilledButton.tonal(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        ref.read(restTimerProvider.notifier).addTime(30);
-                      },
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 40),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                    CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 6,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor:
+                          theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        theme.colorScheme.primary,
                       ),
-                      child: const Text('+30s'),
                     ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        ref.read(restTimerProvider.notifier).skip();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 40),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'REST',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 9,
+                              letterSpacing: 1.6,
+                            ),
+                          ),
+                          Text(
+                            _formatTime(state.remainingSeconds),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: theme.colorScheme.primary,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Text('Skip'),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Rest Period',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Recover before your next set',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        FilledButton.tonal(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(restTimerProvider.notifier).addTime(30);
+                          },
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 40),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          child: const Text('+30s'),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(restTimerProvider.notifier).skip();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 40),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                          ),
+                          child: const Text('Skip'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
