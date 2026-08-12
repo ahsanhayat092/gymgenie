@@ -26,6 +26,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // Step 1: About Me
   final _ageController = TextEditingController(text: '25');
   final _heightController = TextEditingController(text: '175');
+  final _feetController = TextEditingController(text: '5');
+  final _inchesController = TextEditingController(text: '9');
+  bool _useFtIn = false;
   final _weightController = TextEditingController(text: '70');
   String _gender = 'Male';
   String _experience = 'Beginner';
@@ -66,6 +69,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _pageController.dispose();
     _ageController.dispose();
     _heightController.dispose();
+    _feetController.dispose();
+    _inchesController.dispose();
     _weightController.dispose();
     super.dispose();
   }
@@ -97,6 +102,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final existing = ref.read(userProfileProvider).valueOrNull;
       final now = DateTime.now();
 
+      double heightCm = 175.0;
+      if (_useFtIn) {
+        final feet = double.tryParse(_feetController.text) ?? 5.0;
+        final inches = double.tryParse(_inchesController.text) ?? 9.0;
+        heightCm = (feet * 12 + inches) * 2.54;
+      } else {
+        heightCm = double.tryParse(_heightController.text) ?? 175.0;
+      }
+
       final profile = UserProfile(
         uid: existing?.uid ?? '',
         displayName: existing?.displayName ?? '',
@@ -105,7 +119,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         weeklyWorkoutGoal: _daysPerWeek,
         onboardingComplete: true,
         age: int.tryParse(_ageController.text) ?? 25,
-        heightCm: double.tryParse(_heightController.text) ?? 175.0,
+        heightCm: heightCm,
         weightKg: double.tryParse(_weightController.text) ?? 70.0,
         gender: _gender,
         experience: _experience,
@@ -167,7 +181,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   Row(
                     children: [
                       Text(
-                        'GymGenie',
+                        'GymZish',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w800,
@@ -235,14 +249,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       children: [
         Text(
-          'Welcome to GymGenie',
+          'Welcome to GymZish',
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Tell us a bit about yourself so GymGenie can personalise everything for you.',
+          'Tell us a bit about yourself so GymZish can personalise everything for you.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -268,16 +282,79 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: _MetricInput(
-                label: 'Height',
-                controller: _heightController,
-                suffix: 'cm',
+            Text(
+              'Height & Weight',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
             ),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _useFtIn = !_useFtIn;
+                  if (_useFtIn) {
+                    final cm = double.tryParse(_heightController.text) ?? 175.0;
+                    final totalInches = cm / 2.54;
+                    final feet = (totalInches / 12).floor();
+                    final inches = (totalInches % 12).round();
+                    _feetController.text = feet.toString();
+                    _inchesController.text = inches.toString();
+                  } else {
+                    final feet = double.tryParse(_feetController.text) ?? 5.0;
+                    final inches = double.tryParse(_inchesController.text) ?? 9.0;
+                    final cm = (feet * 12 + inches) * 2.54;
+                    _heightController.text = cm.toStringAsFixed(0);
+                  }
+                });
+              },
+              child: Text(
+                _useFtIn ? 'Switch to cm' : 'Switch to ft/in',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            if (!_useFtIn)
+              Expanded(
+                child: _MetricInput(
+                  label: 'Height',
+                  controller: _heightController,
+                  suffix: 'cm',
+                ),
+              )
+            else
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _MetricInput(
+                        label: 'Feet',
+                        controller: _feetController,
+                        suffix: 'ft',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MetricInput(
+                        label: 'Inches',
+                        controller: _inchesController,
+                        suffix: 'in',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(width: 12),
             Expanded(
               child: _MetricInput(
@@ -330,7 +407,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'GymGenie will build every plan around this objective.',
+          'GymZish will build every plan around this objective.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -363,7 +440,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'GymGenie splits your week to match your schedule.',
+          'GymZish splits your week to match your schedule.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -491,7 +568,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'GymGenie only recommends exercises you can actually do.',
+          'GymZish only recommends exercises you can actually do.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -539,7 +616,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'GymGenie will append cardio segments for fat-loss and endurance goals.',
+          'GymZish will append cardio segments for fat-loss and endurance goals.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -593,7 +670,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Tap "Get Started" and GymGenie will save everything. You can update these details anytime.',
+                      'Tap "Get Started" and GymZish will save everything. You can update these details anytime.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onPrimaryContainer
                             .withValues(alpha: 0.85),
