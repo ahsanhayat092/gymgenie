@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:gymgenie/core/widgets/google_logo.dart';
 import 'package:gymgenie/features/auth/application/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -231,13 +232,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         const SizedBox(height: 16),
                         OutlinedButton.icon(
                           onPressed: _loading ? null : _signInWithGoogle,
-                          icon: Text(
-                            'G',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
+                          icon: const GoogleLogo(size: 20),
                           label: const Text('Sign in with Google'),
                         ),
                         const SizedBox(height: 32),
